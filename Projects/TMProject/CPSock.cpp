@@ -417,7 +417,18 @@ int CPSock::CloseSocket()
 	nProcPosition = 0;
 	Init = 0;
 	if (Sock)
+	{
+		// Cancela as notificacoes deste socket e descarta as que ja estao na
+		// fila (WM_USER + 100). O Windows reaproveita o valor do handle: na troca
+		// de canal o socket novo costuma receber o mesmo numero, e o FD_CLOSE
+		// atrasado do socket antigo (o canal anterior fecha a conexao) era lido
+		// como desconexao do novo, derrubando o login no canal novo.
+		WSAAsyncSelect(Sock, hWndMain, 0, 0);
 		closesocket(Sock);
+		MSG stMsg;
+		while (PeekMessageA(&stMsg, hWndMain, WM_USER + 100, WM_USER + 100, PM_REMOVE))
+			;
+	}
 	Sock = 0;
 
 	return 1;
