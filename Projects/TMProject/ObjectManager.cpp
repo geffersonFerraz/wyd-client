@@ -697,7 +697,9 @@ void ObjectManager::SetCurrentState(TM_GAME_STATE ieNewState)
 {
 	if (ieNewState == TM_GAME_STATE::TM_FIELD2_STATE)
 	{
-		m_eCurrentState = TM_GAME_STATE::TM_NONE_STATE;
+		// Troca de canal: recria o campo mesmo ja estando nele (FIELD2 nao tem
+		// cena propria; NONE deixava o switch sem cena -> "Create Scene Fail").
+		m_eCurrentState = TM_GAME_STATE::TM_FIELD_STATE;
 	}
 	else
 	{
