@@ -1346,6 +1346,25 @@ int BASE_InitializeServerList()
     return 0;
 }
 
+// Uma entrada de canal do serverlist.bin e "ip" (porta TM_CONNECTION_PORT,
+// como no cliente original) ou "ip:porta". Copia o IP para szIP e devolve a
+// porta.
+int BASE_GetServerAddress(const char* szEntry, char* szIP, int nIPSize)
+{
+    int nPort = TM_CONNECTION_PORT;
+
+    strncpy_s(szIP, nIPSize, szEntry, _TRUNCATE);
+    char* pColon = strchr(szIP, ':');
+    if (pColon)
+    {
+        *pColon = 0;
+        int nValue = atoi(pColon + 1);
+        if (nValue > 0 && nValue < 65536)
+            nPort = nValue;
+    }
+    return nPort;
+}
+
 int BASE_GetVillage(int x, int y)
 {
     for (int i = 0; i < 5; i++)

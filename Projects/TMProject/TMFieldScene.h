@@ -281,6 +281,7 @@ public:
 	int OnPacketCreateMob(MSG_STANDARD* pStd);
 	int OnPacketCNFCharacterLogout(MSG_STANDARD* pStd);
 	int OnPacketCNFRemoveServer(MSG_CNFRemoveServer* pStd);
+	void OpenServerMovePanel();
 	int OnPacketCNFAccountLogin(MSG_CNFRemoveServerLogin* pStd);
 	int OnPacketCNFCharacterLogin(p114* pStd);
 	int OnPacketItemSold(MSG_STANDARDPARM2* pStd);

@@ -1065,13 +1065,14 @@ int TMSelectServerScene::OnControlEvent(unsigned int idwControlID, unsigned int 
 		m_pMessagePanel->SetVisible(1, 1);
 
 		// Grupos do sn.bin comecam em 1; g_pServerList[0] e o grupo 1.
-		sprintf_s(g_pApp->m_szServerIP, "%s", g_pServerList[g_pObjectManager->m_nServerGroupIndex - 1][g_pObjectManager->m_nServerIndex]);
+		g_nServerPort = BASE_GetServerAddress(g_pServerList[g_pObjectManager->m_nServerGroupIndex - 1][g_pObjectManager->m_nServerIndex],
+			g_pApp->m_szServerIP, sizeof(g_pApp->m_szServerIP));
 		/*sprintf_s(g_pApp->m_szServerIP, "%s", "167.114.95.243");
 		sprintf_s(g_pApp->m_szServerIP, "%s", "108.165.179.32");*/
 		
-		printf("Servidor que conectara: \"%s\"\n", g_pApp->m_szServerIP);
+		printf("Servidor que conectara: \"%s:%d\"\n", g_pApp->m_szServerIP, g_nServerPort);
 
-		if (!g_pSocketManager->ConnectServer(g_pApp->m_szServerIP, TM_CONNECTION_PORT, 0, 1124))
+		if (!g_pSocketManager->ConnectServer(g_pApp->m_szServerIP, g_nServerPort, 0, 1124))
 		{
 			pLoginOK->SetEnable(1);
 

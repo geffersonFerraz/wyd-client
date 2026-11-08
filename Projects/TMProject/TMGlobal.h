@@ -152,6 +152,7 @@ extern int g_totaleffect;
 extern int g_nUpdateGuildName;
 extern char g_szEncryptedAcc[256];
 extern int g_bMoveServer;
+extern int g_nServerPort; // porta do canal atual (serverlist.bin "ip:porta")
 
  
 extern int g_bTestServer;

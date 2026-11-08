@@ -3362,6 +3362,11 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 			{
 				return 1;
 			}
+			else if (!strcmp(str1, "canal") || !strcmp(str1, "channel"))
+			{
+				OpenServerMovePanel();
+				return 1;
+			}
 			else if (!strcmp(str1, g_pMessageStringTable[496]))
 			{
 				sprintf(stMsgWhisper.MobName, "%s", "item_lock");
@@ -5758,11 +5763,19 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 	if (idwControlID == 12289)
 	{
 		SListBoxServerItem* pItem = (SListBoxServerItem*)m_pServerList->GetItem(idwEvent);
+		if (!pItem)
+			return 1;
+		if (static_cast<int>(idwEvent) + 1 == g_pObjectManager->m_nServerIndex || !pItem->m_cConnected)
+			return 1;
 		if (pItem->m_nCurrent < 500)
 		{
+			// A lista tem os canais 1..N em ordem: a posicao + 1 e o canal.
+			// Depois de 5 s envia "srv507 N" (ver m_nServerMove).
 			m_nServerMove = idwEvent + 1;
 			m_dwLastTeleport = dwServerTime;
 			m_cLastTeleport = 1;
+			if (m_pServerPanel)
+				m_pServerPanel->SetVisible(0);
 		}
 		else
 		{
@@ -24373,15 +24386,14 @@ int TMFieldScene::OnPacketCNFCharacterLogout(MSG_STANDARD* pStd)
 
 int TMFieldScene::OnPacketCNFRemoveServer(MSG_CNFRemoveServer* pStd)
 {
-	if (pStd->Header.ID != g_pObjectManager->m_dwCharID || g_pSocketManager->Sock)
-	{
-		if (pStd->Header.ID == g_pObjectManager->m_dwCharID && g_pSocketManager->Sock)
-		{
-			memcpy(&m_stRemoveServer, pStd, sizeof(m_stRemoveServer));
-			m_bMsgRemoveServer = 1;
-		}
+	if (pStd->Header.ID != g_pObjectManager->m_dwCharID)
 		return 1;
-	}
+
+	// O servidor fecha a conexao logo depois deste pacote. O original guardava
+	// o pacote (m_bMsgRemoveServer) enquanto o socket estava aberto e nunca o
+	// processava; aqui o socket antigo e fechado e a troca segue na hora.
+	if (g_pSocketManager->Sock)
+		g_pSocketManager->CloseSocket();
 
 	m_pMessagePanel->SetMessage(g_pMessageStringTable[7], 0);
 	m_pMessagePanel->SetVisible(1, 0);
@@ -24392,9 +24404,10 @@ int TMFieldScene::OnPacketCNFRemoveServer(MSG_CNFRemoveServer* pStd)
 	sscanf(pStd->TID, "*%d", &nServer);
 	g_pObjectManager->m_nServerIndex = nServer;
 	CheckPKNonePK(g_pObjectManager->m_nServerIndex);
-	sprintf(g_pApp->m_szServerIP, "%s", g_pServerList[g_pObjectManager->m_nServerGroupIndex - 1][nServer]);
+	g_nServerPort = BASE_GetServerAddress(g_pServerList[g_pObjectManager->m_nServerGroupIndex - 1][nServer],
+		g_pApp->m_szServerIP, sizeof(g_pApp->m_szServerIP));
 
-	if (g_pSocketManager->ConnectServer(g_pApp->m_szServerIP, TM_CONNECTION_PORT, 0, 1124))
+	if (g_pSocketManager->ConnectServer(g_pApp->m_szServerIP, g_nServerPort, 0, 1124))
 	{
 		MSG_AccountLogin stAccountLogin{};
 		stAccountLogin.Header.ID = 0;
@@ -24445,6 +24458,54 @@ int TMFieldScene::OnPacketCNFRemoveServer(MSG_CNFRemoveServer* pStd)
 	return 1;
 }
 
+// Lista de canais dentro do jogo (painel 12288, comando /canal): os canais
+// do grupo atual no serverlist.bin, com o online de cada um (servNN.htm).
+void TMFieldScene::OpenServerMovePanel()
+{
+	if (!m_pServerPanel || !m_pServerList)
+		return;
+
+	int nGroup = g_pObjectManager->m_nServerGroupIndex - 1;
+	if (nGroup < 0 || nGroup >= MAX_SERVERGROUP)
+		return;
+
+	int nUserCount[MAX_SERVERNUMBER];
+	for (int i = 0; i < MAX_SERVERNUMBER; ++i)
+		nUserCount[i] = -1;
+
+	char szUserCount[1024]{};
+	BASE_GetHttpRequest(g_pServerList[nGroup][0], szUserCount, sizeof szUserCount);
+	sscanf_s(szUserCount, "%d\\n%d\\n%d\\n%d\\n%d\\n%d\\n%d\\n%d\\n%d\\n%d\\n%d\\n",
+		&nUserCount[0], &nUserCount[1], &nUserCount[2], &nUserCount[3], &nUserCount[4], &nUserCount[5],
+		&nUserCount[6], &nUserCount[7], &nUserCount[8], &nUserCount[9], &nUserCount[10]);
+
+	m_pServerList->Empty();
+	for (int num = 1; num < MAX_SERVERNUMBER; ++num)
+	{
+		// Canais numerados 1..N sem buracos: o clique usa a posicao + 1.
+		if (!g_pServerList[nGroup][num][0])
+			break;
+
+		char szStr[128]{};
+		if (g_szServerNameList[nGroup][0])
+			sprintf_s(szStr, "%s-%d", g_szServerNameList[nGroup], num);
+		else
+			sprintf_s(szStr, "Canal %d", num);
+		if (num == g_pObjectManager->m_nServerIndex)
+			strcat_s(szStr, " (atual)");
+
+		int nCount = nUserCount[num] < 0 ? 0 : nUserCount[num];
+		int nTextureSet = num == g_pObjectManager->m_nServerIndex ? -2 : -1;
+		auto pItem = new SListBoxServerItem(nTextureSet, szStr, 0xFFFFFFFF, 3.0f, 2.0f,
+			static_cast<float>(g_nChannelWidth) - 9.0f, 16.0f, nCount, 0, 0, num);
+		if (nUserCount[num] < 0)
+			pItem->m_cConnected = 0;
+		m_pServerList->AddItem(pItem);
+	}
+
+	m_pServerPanel->SetVisible(1);
+}
+
 int TMFieldScene::OnPacketCNFAccountLogin(MSG_CNFRemoveServerLogin* pStd)
 {
 	memcpy(&g_pObjectManager->m_stSelCharData, &pStd->SelChar, sizeof(pStd->SelChar));
@@ -24464,7 +24525,7 @@ int TMFieldScene::OnPacketCNFCharacterLogin(p114* pStd)
 {
 	m_pMessagePanel->SetVisible(0, 1);
 	g_pTimerManager->SetServerTime(pStd->Header.Tick);
-	g_pObjectManager->m_dwCharID = pStd->Header.ID;
+	g_pObjectManager->m_dwCharID = pStd->ClientIndex;
 	memcpy(&g_pObjectManager->m_stMobData, &pStd->Mob, sizeof(STRUCT_MOB));
 	g_pObjectManager->m_nFakeExp = pStd->Hold;
 	g_pObjectManager->m_stMobData.HomeTownX = pStd->WorldPos.X;

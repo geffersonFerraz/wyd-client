@@ -110,6 +110,7 @@ int g_pDebugMaxCount;
 
 int g_bTestServer;
 int g_bMoveServer;
+int g_nServerPort = TM_CONNECTION_PORT;
 char g_szEncryptedAcc[256];
 
 int g_bHideBackground = FALSE;

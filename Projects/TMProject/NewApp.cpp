@@ -1157,6 +1157,11 @@ HRESULT NewApp::MsgProc(HWND hWnd, DWORD uMsg, DWORD wParam, int lParam)
 		if (m_pSocketManager == nullptr)
 			break;
 
+		// Mensagem de um socket que ja fechamos (o do canal anterior, na troca
+		// de canal): nao e a conexao atual, entao nao e uma desconexao.
+		if ((unsigned int)wParam != m_pSocketManager->Sock)
+			break;
+
 		if (lParam != 1)
 		{
 			m_pSocketManager->CloseSocket();

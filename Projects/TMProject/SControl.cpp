@@ -4054,7 +4054,7 @@ void SReconnectPanel::CheckServerConnection()
 	int ip = inet_addr(g_pApp->m_szServerIP);
 
 	// Medindo o ping
-	int ping = g_pSocketManager->MeasurePing(g_pApp->m_szServerIP, TM_CONNECTION_PORT, ip);
+	int ping = g_pSocketManager->MeasurePing(g_pApp->m_szServerIP, g_nServerPort, ip);
 	ping /= 4;
 	if (ping == -1) {
 		std::cout << "Erro ao medir o ping." << std::endl;

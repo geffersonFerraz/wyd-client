@@ -3577,6 +3577,7 @@ void BASE_ReadItemPrice();
 void BASE_UnderBarToSpace(char* szStr);
 int BASE_InitializeServerList();
 int	BASE_GetHttpRequest(char* httpname, char* Request, int MaxBuffer);
+int	BASE_GetServerAddress(const char* szEntry, char* szIP, int nIPSize);
 int BASE_GetSum(char* p, int size);
 int BASE_GetSum2(char* p, int size);
 int BASE_GetWeekNumber();
