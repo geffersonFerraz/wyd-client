@@ -68,7 +68,9 @@ TMSelectServerScene::TMSelectServerScene()
 	if (Game_grade)
 		GameGradeScene();
 
-	m_bAdmit = 1;
+	// Modo "admit" (grupo virtual com 1 canal por grupo, rodando pelo dia)
+	// desligado: mostra todos os canais do grupo.
+	m_bAdmit = 0;
 	if (g_pApp->m_pBGMManager != nullptr)
 		g_pApp->m_pBGMManager->StopBGM();
 
@@ -743,6 +745,12 @@ int TMSelectServerScene::InitializeScene()
 //	return 0;
 //}
 
+// Grupo (indice em g_pServerList) de cada linha da lista de grupos, na ordem
+// em que InitializeUI as adicionou; -1 = linha inexistente. Grupos do sn.bin
+// sem entrada no serverlist.bin nao viram linha, entao a linha nao pode ser
+// deduzida do sn.bin.
+static int s_nGroupRowIndex[11] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+
 int TMSelectServerScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEvent)
 {
 	int nMaxGroupN = 0;
@@ -755,6 +763,8 @@ int TMSelectServerScene::OnControlEvent(unsigned int idwControlID, unsigned int 
 	SListBoxServerItem* pServerItem[11]{ nullptr };
 
 	int nIndexN = g_nServerCountList[nMaxGroupN - idwEvent - 1] - 1;
+	if (idwControlID == L_SELECT_SERVERG && idwEvent < 11 && s_nGroupRowIndex[idwEvent] >= 0)
+		nIndexN = s_nGroupRowIndex[idwEvent];
 	m_pReconnectPanel->OnControlEvent(idwControlID, idwEvent);
 	switch (idwControlID)
 	{
@@ -956,7 +966,10 @@ int TMSelectServerScene::OnControlEvent(unsigned int idwControlID, unsigned int 
 	case B_SERVER_SEL_OK:
 	{
 		int nServerIndex = m_pNServerList->GetSelectedIndex() + 1;
-		int nServerGroupIndex = g_nServerCountList[m_pNServerGroupList->GetSelectedIndex()];
+		int nGroupRow = m_pNServerGroupList->GetSelectedIndex();
+		int nServerGroupIndex = (nGroupRow >= 0 && nGroupRow < 11 && s_nGroupRowIndex[nGroupRow] >= 0)
+			? s_nGroupRowIndex[nGroupRow] + 1 // grupos do sn.bin comecam em 1
+			: g_nServerCountList[nGroupRow];
 
 		SListBoxServerItem* pItem = static_cast<SListBoxServerItem*>(m_pNServerList->GetItem(nServerIndex - 1));
 
@@ -1954,6 +1967,10 @@ void TMSelectServerScene::InitializeUI()
 		if (g_pServerList[9][0][0])
 			m_nMaxGroup = 9;
 
+		int nGroupRows = 0;
+		for (int i = 0; i < 11; ++i)
+			s_nGroupRowIndex[i] = -1;
+
 		for (int i = m_nMaxGroup; i >= 0; --i)
 		{
 			int count = g_nServerCountList[i] - 1;
@@ -1962,12 +1979,14 @@ void TMSelectServerScene::InitializeUI()
 			{
 				char szStr[128]{ 0 };
 				if (g_szServerNameList[i][0])
-					sprintf_s(szStr, g_szServerNameList[i + 1]);
+					sprintf_s(szStr, "%s", g_szServerNameList[i]);
 				else
 					sprintf_s(szStr, g_pMessageStringTable[66], count);
 
 				pGroupItem[i] = new SListBoxItem(szStr, 0xD0FFFFFF, 0.0f, 0.0f, 63.0f, 16.0f, 0, 0x77777777u, 1u, 0);
 				m_pNServerGroupList->AddItem(pGroupItem[i]);
+				if (nGroupRows < 11)
+					s_nGroupRowIndex[nGroupRows++] = count;
 			}
 		}
 	}

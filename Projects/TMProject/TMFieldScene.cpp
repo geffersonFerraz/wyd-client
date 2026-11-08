@@ -2564,6 +2564,10 @@ int TMFieldScene::InitializeScene()
 	return 1;
 }
 
+// Linha "Sair para a tela de login" no fim da lista de canais (painel 12288);
+// -1 quando a lista nao a tem.
+static int s_nServerMoveExitRow = -1;
+
 int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEvent)
 {
 
@@ -4942,14 +4946,10 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 	}
 	if (idwControlID == B_SYS_SERVER)//65880
 	{
-		pReconectData.PosX = (int)m_pMyHuman->m_vecPosition.x;
-		pReconectData.PosY = (int)m_pMyHuman->m_vecPosition.y;
-
-		m_dwLastSelServer = g_pTimerManager->GetServerTime();
-		MSG_STANDARDPARM stParm{};
-		stParm.Header.ID = m_pMyHuman->m_dwID;
-		stParm.Header.Type = MSG_SysQuit_Opcode;
-		g_pSocketManager->SendOneMessage((char*)&stParm, sizeof(stParm));
+		// Mostra a lista de canais; voltar a tela de login e o ultimo item dela.
+		if (m_pSystemPanel)
+			m_pSystemPanel->SetVisible(0);
+		OpenServerMovePanel();
 		return 1;
 		 
 	}
@@ -5762,6 +5762,24 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 	}
 	if (idwControlID == 12289)
 	{
+		if (static_cast<int>(idwEvent) == s_nServerMoveExitRow)
+		{
+			// Antigo botao "Servidor": conta 5 s e volta a tela de login.
+			if (m_pServerPanel)
+				m_pServerPanel->SetVisible(0);
+			if (m_dwLastSelServer)
+				return 1;
+			pReconectData.PosX = (int)m_pMyHuman->m_vecPosition.x;
+			pReconectData.PosY = (int)m_pMyHuman->m_vecPosition.y;
+
+			m_dwLastSelServer = g_pTimerManager->GetServerTime();
+			MSG_STANDARDPARM stParm{};
+			stParm.Header.ID = m_pMyHuman->m_dwID;
+			stParm.Header.Type = MSG_SysQuit_Opcode;
+			g_pSocketManager->SendOneMessage((char*)&stParm, sizeof(stParm));
+			return 1;
+		}
+
 		SListBoxServerItem* pItem = (SListBoxServerItem*)m_pServerList->GetItem(idwEvent);
 		if (!pItem)
 			return 1;
@@ -24480,6 +24498,7 @@ void TMFieldScene::OpenServerMovePanel()
 		&nUserCount[6], &nUserCount[7], &nUserCount[8], &nUserCount[9], &nUserCount[10]);
 
 	m_pServerList->Empty();
+	int nRows = 0;
 	for (int num = 1; num < MAX_SERVERNUMBER; ++num)
 	{
 		// Canais numerados 1..N sem buracos: o clique usa a posicao + 1.
@@ -24501,7 +24520,12 @@ void TMFieldScene::OpenServerMovePanel()
 		if (nUserCount[num] < 0)
 			pItem->m_cConnected = 0;
 		m_pServerList->AddItem(pItem);
+		++nRows;
 	}
+
+	m_pServerList->AddItem(new SListBoxItem((char*)"Sair para a tela de login", 0xFFFFD070, 3.0f, 2.0f,
+		static_cast<float>(g_nChannelWidth) - 9.0f, 16.0f, 0, 0x77777777, 1, 0));
+	s_nServerMoveExitRow = nRows;
 
 	m_pServerPanel->SetVisible(1);
 }
