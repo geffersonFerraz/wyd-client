@@ -20,7 +20,7 @@ TMEffectMeshRotate::TMEffectMeshRotate(TMVector3 vecPosition, int nType, TMObjec
 	m_bScale = 0;
 	m_vecPosition = m_vecStartPos;
 
-	m_dwStartTime = 100 * ((unsigned int)this % 10) + g_pTimerManager->GetServerTime();
+	m_dwStartTime = 100 * ((unsigned int)(uintptr_t)this % 10) + g_pTimerManager->GetServerTime();
 	if (m_nType == 2)
 		m_dwStartTime = g_pTimerManager->GetServerTime();
 	m_pOwner = pOwner;

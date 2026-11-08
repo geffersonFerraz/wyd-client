@@ -272,7 +272,7 @@ int TMEffectBillBoard::FrameMove(unsigned int dwServerTime)
 	break;
 	case 2:
 	{
-		DWORD dwThis = (unsigned int)this % 100;
+		DWORD dwThis = (unsigned int)(uintptr_t)this % 100;
 		float fOther = 1.0f - m_fBaseAlpha;
 		float fVel = (float)((dwServerTime + 200 * dwThis) % 3000) / 3000.0f;
 

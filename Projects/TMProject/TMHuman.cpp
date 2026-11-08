@@ -5412,9 +5412,9 @@ int TMHuman::OnPacketTrade(MSG_Trade* pStd)
             if (pNode)
             {
                 char szMyName[128]{};
-                sprintf(szMyName, "[%s]:%d", m_szName, strlen(m_szName));
+                sprintf(szMyName, "[%s]:%d", m_szName, (int)strlen(m_szName));
                 char szOPName[128]{};
-                sprintf(szOPName, "[%s]:%d", pNode->m_szName, strlen(pNode->m_szName));
+                sprintf(szOPName, "[%s]:%d", pNode->m_szName, (int)strlen(pNode->m_szName));
                 pTextMyName->SetText(szMyName, 1);
                 pTextOPName->SetText(szOPName, 1);
                 pScene->SetVisibleTrade(1);

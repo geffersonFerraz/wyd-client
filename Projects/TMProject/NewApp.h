@@ -51,7 +51,7 @@ public:
     void InitMusicList();
     virtual HRESULT Finalize();
     virtual DWORD Run();
-    virtual void OnCreate(HWND hWnd, DWORD wParam, int lParam);
+    virtual void OnCreate(HWND hWnd, WPARAM wParam, LPARAM lParam);
     virtual HRESULT RenderScene();
     virtual void SetObjectManager(ObjectManager* pManager);
     virtual EventTranslator* GetEventTranslator();
@@ -63,7 +63,7 @@ public:
     void MixHelp();
     int BASE_Initialize_NewServerList();
     void InitServerNameMR();
-    HRESULT MsgProc(HWND hWnd, DWORD uMsg, DWORD wParam, int lParam);
+    LRESULT MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     bool CheckResolution(DWORD x, DWORD y, DWORD bpp);
 
     char base_chinaTid(char* TID, char* Id);

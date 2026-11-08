@@ -25,7 +25,7 @@ Este código é uma descompilação fiel ao original, isto é, o código que aqu
 ## Compilação
 O projeto pode ser compilado apenas para Windows utilizando Visual Studio (o projeto está preparado para a versão 2019, mas o mesmo não há limitação quanto a versão mínima ou máxima). 
 
-A compilação para x64 é possível, basta que seja utilizado a dependência para x64 do DirectX assim como corrigir problemas quanto a compilação para esta arquitetura.
+O cliente é somente x64. Use `build.ps1`: o `WYD.exe`, a `D3DX9_43.dll` e a `D3DCompiler_43.dll` são gerados em `Build\x64\<Config>\` e os três precisam ficar juntos na pasta do jogo. Código novo não deve usar tamanhos de struct numéricos (`dwSize = 36`): use sempre `sizeof`, pois structs com ponteiros mudam de tamanho em x64.
 
 ## Dependências
 
@@ -34,7 +34,7 @@ Para compilar o projeto você precisará ter o Visual Studio 2022 com os seguint
 - Desenvolvimento para desktop com C++
 - ATL do C++ para a versão da toolchain que está sendo utilizada
 
-A única dependência externa do projeto é o DirectX porém o mesmo está incluida no repositório e devidamente configurada.
+A única dependência externa do projeto é o DirectX, incluído no repositório. O D3DX 43 (`Dependencies\D3DX`) vem do pacote oficial `Microsoft.DXSDK.D3DX`, versão 9.29.952.8.
 
 ## Bugs
 Este projeto é uma descompilação e o mesmo pode e contém problemas. 

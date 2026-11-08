@@ -124,8 +124,8 @@ int g_nMyHumanSpeed = 3;
 int g_NonePKServer;
 int g_pPKServerNum[2] = { 5, 10 };
 
-int g_nTempArray[3] = { (int)(0xF1476E2F), 0, 0 };
-int g_nTempArray2[4] = { (int)(0xF1577A31), 0, 0, 0 };
+intptr_t g_nTempArray[3] = { (int)(0xF1476E2F), 0, 0 };
+intptr_t g_nTempArray2[4] = { (int)(0xF1577A31), 0, 0, 0 };
 
 stMinimapPos g_MinimapPos[256];
 char g_TempName[16];

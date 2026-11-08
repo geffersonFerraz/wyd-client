@@ -142,7 +142,7 @@ int TMEffectBillBoard2::FrameMove(unsigned int dwServerTime)
 	{
 		if (m_efAlphaType == EEFFECT_ALPHATYPE::EF_BRIGHT)
 		{
-			m_fProgress = (float)((dwServerTime + (int)m_vecPosition.z + (int)m_vecPosition.x + 300 * ((unsigned int)this % 10)) % 1000) / 1000.0f;
+			m_fProgress = (float)((dwServerTime + (int)m_vecPosition.z + (int)m_vecPosition.x + 300 * ((unsigned int)(uintptr_t)this % 10)) % 1000) / 1000.0f;
 		}
 		else
 		{
@@ -167,7 +167,7 @@ int TMEffectBillBoard2::FrameMove(unsigned int dwServerTime)
 	break;
 	case 2:
 	{
-		float fVel = (float)((dwServerTime + 200 * ((unsigned int)this % 100)) % 5000) / 5000.0f;
+		float fVel = (float)((dwServerTime + 200 * ((unsigned int)(uintptr_t)this % 100)) % 5000) / 5000.0f;
 
 		DWORD dwA = (unsigned int)(((0.2f * fabsf(sinf((fVel * D3DXToRadian(180)) * 2.0f))) + 0.80000001f) * (float)m_dwA);
 		DWORD dwR = (unsigned int)(((0.2f * fabsf(sinf((fVel * D3DXToRadian(180)) * 2.0f))) + 0.80000001f) * (float)m_dwR);
@@ -183,7 +183,7 @@ int TMEffectBillBoard2::FrameMove(unsigned int dwServerTime)
 	case 3:
 	case 4:
 	{
-		float fVel = (float)((dwServerTime + 200 * ((unsigned int)this % 100)) % 5000) / 5000.0f;
+		float fVel = (float)((dwServerTime + 200 * ((unsigned int)(uintptr_t)this % 100)) % 5000) / 5000.0f;
 
 		DWORD dwA = (unsigned int)(((0.80000001f * fabsf(sinf((fVel * D3DXToRadian(180)) * 2.0f))) + 0.2f) * (float)m_dwA);
 		DWORD dwR = (unsigned int)(((0.80000001f * fabsf(sinf((fVel * D3DXToRadian(180)) * 2.0f))) + 0.2f) * (float)m_dwR);

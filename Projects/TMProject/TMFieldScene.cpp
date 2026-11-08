@@ -85,8 +85,8 @@ unsigned int TMFieldScene::m_dwCargoID = 0;
 TMFieldScene::TMFieldScene()
 	: TMScene()
 {
-	g_nTempArray[1] = (int)g_pObjectManager->m_stMobData.MobName;
-	g_nTempArray2[1] = (int)g_pObjectManager->m_stMobData.MobName;
+	g_nTempArray[1] = (intptr_t)g_pObjectManager->m_stMobData.MobName;
+	g_nTempArray2[1] = (intptr_t)g_pObjectManager->m_stMobData.MobName;
 
 	LOG_WRITELOG(">> New Field Scene\r\n");
 	m_eSceneType = ESCENE_TYPE::ESCENE_FIELD;
@@ -21718,8 +21718,8 @@ int TMFieldScene::OnMsgBoxEvent(unsigned int idwControlID, unsigned int idwEvent
 
 			char szMyName[128]{};
 			char szOPName[128]{};
-			sprintf_s(szMyName, "[%s]:%d", m_pMyHuman->m_szName, strlen(m_pMyHuman->m_szName));
-			sprintf_s(szOPName, "[%s]:%d", pNode->m_szName, strlen(pNode->m_szName));
+			sprintf_s(szMyName, "[%s]:%d", m_pMyHuman->m_szName, (int)strlen(m_pMyHuman->m_szName));
+			sprintf_s(szOPName, "[%s]:%d", pNode->m_szName, (int)strlen(pNode->m_szName));
 			pTextMyName->SetText(szMyName, 1);
 			pTextOPName->SetText(szOPName, 1);
 			SetVisibleTrade(1);
@@ -23691,8 +23691,8 @@ int TMFieldScene::OnPacketCreateMob(MSG_STANDARD* pStd)
 		for (int l = 0; l < 32; ++l)
 			memcpy(&tempAffect[l], &m_pMyHuman->m_stAffect[l], sizeof(STRUCT_AFFECT));
 
-		g_nTempArray[2] = (int)&m_pMyHuman->m_vecPosition;
-		g_nTempArray2[2] = (int)&m_pMyHuman->m_vecPosition;
+		g_nTempArray[2] = (intptr_t)&m_pMyHuman->m_vecPosition;
+		g_nTempArray2[2] = (intptr_t)&m_pMyHuman->m_vecPosition;
 		if (!m_stMoveStop.NextX)
 		{
 			m_stMoveStop.NextX = pCreateMob->PosX;

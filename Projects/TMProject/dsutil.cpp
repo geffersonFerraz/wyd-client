@@ -107,7 +107,7 @@ HRESULT CSoundManager::SetPrimaryBufferFormat(DWORD dwPrimaryChannels, DWORD dwP
 	_DSBUFFERDESC dsbd{};
 	memset(&dsbd, 0, sizeof dsbd);
 
-	dsbd.dwSize = 36;
+	dsbd.dwSize = sizeof(DSBUFFERDESC);
 	dsbd.dwFlags = 1;
 	dsbd.dwBufferBytes = 0;
 	dsbd.lpwfxFormat = 0;
@@ -147,7 +147,7 @@ HRESULT CSoundManager::Get3DListenerInterface(LPDIRECTSOUND3DLISTENER* ppDSListe
 	_DSBUFFERDESC dsbdesc{};
 
 	memset(&dsbdesc, 0, sizeof _DSBUFFERDESC);
-	dsbdesc.dwSize = 36;
+	dsbdesc.dwSize = sizeof(DSBUFFERDESC);
 	dsbdesc.dwFlags = DSBCAPS_CTRL3D | DSBCAPS_PRIMARYBUFFER;
 	
 	HRESULT hr = m_pDS->CreateSoundBuffer(&dsbdesc, &pDSBPrimary, nullptr);
@@ -210,7 +210,7 @@ HRESULT CSoundManager::Create(CSound** ppSound, LPTSTR strWaveFileName, DWORD dw
 	dwDSBufferSize = pWaveFile->GetSize();
 	memset(&dsbd, 0, sizeof dsbd);
 
-	dsbd.dwSize = 36;
+	dsbd.dwSize = sizeof(DSBUFFERDESC);
 	dsbd.dwFlags = dwCreationFlags;
 	dsbd.dwBufferBytes = dwDSBufferSize;
 	dsbd.guid3DAlgorithm = guid3DAlgorithm;

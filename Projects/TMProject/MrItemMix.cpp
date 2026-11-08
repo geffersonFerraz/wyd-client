@@ -555,7 +555,7 @@ void CItemMix::ClickInvItem(SGridControlItem* pItem, SGridControl** GridInvList,
             for (int nY = 0; nY < 3; ++nY)
             {
                 for (int nX = 0; nX < 5; ++nX)
-                    if ((int)pGridInv->GetItem(nX, nY) && pItem->m_GCObj.dwColor == -65536)
+                    if (pGridInv->GetItem(nX, nY) != nullptr && pItem->m_GCObj.dwColor == -65536)
                         return;
             }
         }

@@ -1930,8 +1930,11 @@ void RenderDevice::RenderRect(float iStartX, float iStartY, float iCX, float iCY
 
 	if (pTexture != nullptr && m_pSprite != nullptr)
 	{
-		m_pSprite->Begin();
-		m_pSprite->Draw(pTexture, &srcRect, &scaleVec, &rotCenter, 0, &destPoint, 0xFFFFFFFF);
+		m_pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+		D3DXMATRIX matSprite;
+		D3DXMatrixTransformation2D(&matSprite, nullptr, 0.0f, &scaleVec, &rotCenter, 0.0f, &destPoint);
+		m_pSprite->SetTransform(&matSprite);
+		m_pSprite->Draw(pTexture, &srcRect, nullptr, nullptr, 0xFFFFFFFF);
 		m_pSprite->End();
 	}
 }
@@ -2796,8 +2799,11 @@ void RenderDevice::RenderRectRot(float iStartX, float iStartY, float iCX, float 
 
 	if (pTexture != nullptr && m_pSprite != nullptr)
 	{
-		m_pSprite->Begin();
-		m_pSprite->Draw(pTexture, &srcRect, &scaleVec, &rotCenter, -fAngle, &destPoint, 0xFFFFFFFF);
+		m_pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+		D3DXMATRIX matSprite;
+		D3DXMatrixTransformation2D(&matSprite, nullptr, 0.0f, &scaleVec, &rotCenter, -fAngle, &destPoint);
+		m_pSprite->SetTransform(&matSprite);
+		m_pSprite->Draw(pTexture, &srcRect, nullptr, nullptr, 0xFFFFFFFF);
 		m_pSprite->End();
 	}
 }

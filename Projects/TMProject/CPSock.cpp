@@ -68,7 +68,7 @@ bool CPSock::WSAInitialize()
 	return WSAStartup(MAKEWORD(1, 1), &WSAData) == 0;
 }
 
-unsigned int CPSock::StartListen(HWND hWnd, int ip, int port, int WSA)
+UINT_PTR CPSock::StartListen(HWND hWnd, int ip, int port, int WSA)
 {
 	sockaddr_in local_sin;
 	memset((char*)&local_sin, 0, sizeof(local_sin));
@@ -119,7 +119,7 @@ unsigned int CPSock::StartListen(HWND hWnd, int ip, int port, int WSA)
 	return 1;
 }
 
-unsigned int CPSock::ConnectServer(char* HostAddr, int Port, int ip, int WSA)
+UINT_PTR CPSock::ConnectServer(char* HostAddr, int Port, int ip, int WSA)
 {
 	sockaddr_in InAddr;
 	memset((char*)& InAddr, 0, sizeof(InAddr));
@@ -196,7 +196,7 @@ unsigned int CPSock::ConnectServer(char* HostAddr, int Port, int ip, int WSA)
 	return 1;
 }
 
-unsigned int CPSock::SingleConnect(char* HostAddr, int Port, int ip, int WSA)
+UINT_PTR CPSock::SingleConnect(char* HostAddr, int Port, int ip, int WSA)
 {
 	sockaddr_in InAddr;
 	memset((char*)&InAddr, 0, sizeof(InAddr));

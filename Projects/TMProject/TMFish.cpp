@@ -72,7 +72,7 @@ int TMFish::FrameMove(unsigned int dwServerTime)
     {
         dwServerTime = g_pTimerManager->GetServerTime();
         unsigned int dwOffset = (unsigned int)((((((m_fParticleH * 12.0f) + (m_fCircleSpeed * 12.0f)) + 
-            (float)(20 * ((unsigned int)this % 100))) + (float)(10 * m_stLookInfo.Mesh0)) + (m_fScale * 10.0f)) + (float)(5 * m_nMotionType));
+            (float)(20 * ((unsigned int)(uintptr_t)this % 100))) + (float)(10 * m_stLookInfo.Mesh0)) + (m_fScale * 10.0f)) + (float)(5 * m_nMotionType));
 
         float fProgress = sinf((((float)((dwOffset + dwServerTime - m_dwStartTime) % 40000) / 40000.0f) * D3DXToRadian(180)) * 2.0f);
         if (m_nMotionType == 0)

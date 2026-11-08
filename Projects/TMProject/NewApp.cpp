@@ -651,10 +651,10 @@ DWORD NewApp::Run()
 	if (hAccel)
 		DestroyAcceleratorTable(hAccel);
 
-	return msg.wParam;
+	return (DWORD)msg.wParam;
 }
 
-void NewApp::OnCreate(HWND hWnd, DWORD wParam, int lParam)
+void NewApp::OnCreate(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
 	m_hBMBtnBG = LoadBitmap(g_hInstance, (LPCSTR)0xAB);
 }
@@ -794,7 +794,7 @@ void NewApp::InitServerNameMR()
 {
 }
 
-HRESULT NewApp::MsgProc(HWND hWnd, DWORD uMsg, DWORD wParam, int lParam)
+LRESULT NewApp::MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
@@ -1159,7 +1159,7 @@ HRESULT NewApp::MsgProc(HWND hWnd, DWORD uMsg, DWORD wParam, int lParam)
 
 		// Mensagem de um socket que ja fechamos (o do canal anterior, na troca
 		// de canal): nao e a conexao atual, entao nao e uma desconexao.
-		if ((unsigned int)wParam != m_pSocketManager->Sock)
+		if (wParam != m_pSocketManager->Sock)
 			break;
 
 		if (lParam != 1)

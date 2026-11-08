@@ -49,7 +49,6 @@ int EventTranslator::InitializeIME()
     HIMC hIMC = ImmCreateContext();
     m_hOldIMC = ImmAssociateContext(m_hWnd, hIMC);
 
-    SetWindowLong(m_hWnd, 0, (LONG)m_hOldIMC);
 
     ImmReleaseContext(m_hWnd, hIMC);
     SendMessage(g_pApp->m_hWnd, 641, 0, 0x8000000E);
@@ -94,7 +93,6 @@ void EventTranslator::FinalizeIME()
 {
     GlobalFree(m_lpCandList);
     m_lpCandList = nullptr;
-    m_hOldIMC = (HIMC)GetWindowLong(m_hWnd, 0);
 
     HIMC hIMC = ImmAssociateContext(m_hWnd, m_hOldIMC);
     ImmDestroyContext(hIMC);

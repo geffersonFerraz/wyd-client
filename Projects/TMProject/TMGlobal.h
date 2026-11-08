@@ -174,8 +174,8 @@ extern int g_nMyHumanSpeed;
 extern int g_NonePKServer;;
 extern int g_pPKServerNum[2];
 
-extern int g_nTempArray[3];
-extern int g_nTempArray2[4];
+extern intptr_t g_nTempArray[3];
+extern intptr_t g_nTempArray2[4];
 
 
 extern ReconectConfig pReconectData;

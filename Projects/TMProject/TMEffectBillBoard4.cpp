@@ -170,7 +170,7 @@ int TMEffectBillBoard4::FrameMove(unsigned int dwServerTime)
     break;
     case 2:
     {
-        float fVel = (float)((dwServerTime + 200 * ((unsigned int)this % 100)) % 3000) / 3000.0f;
+        float fVel = (float)((dwServerTime + 200 * ((unsigned int)(uintptr_t)this % 100)) % 3000) / 3000.0f;
 
         DWORD dwA = (unsigned int)(((0.2f * fabsf(sinf((fVel * 3.1415927f) * 2.0f))) + 0.80000001f) * (float)m_dwA);
         DWORD dwR = (unsigned int)(((0.2f * fabsf(sinf((fVel * 3.1415927f) * 2.0f))) + 0.80000001f) * (float)m_dwR);
