@@ -648,9 +648,9 @@ void TMFieldScene::UpdateMobKeyUP(int parm)
 			if (lb[i] == 478487)
 				sprintf(str, "%s", lstName);
 			else if (lb[i] == 478489)
-				sprintf(str, " %d", it->gold);
+				sprintf(str, " %lld", it->gold);
 			else if (lb[i] == 478490)
-				sprintf(str, " %d", it->exp);
+				sprintf(str, " %lld", it->exp);
 
 			auto _lb = (SText*)m_pControlContainer->FindControl(lb[i]);
 			if (_lb)
@@ -777,9 +777,9 @@ void TMFieldScene::UpdateGridDropList(int page)
 			if (lb[i] == 478487)
 				sprintf(str, "%s", lstName);
 			else if (lb[i] == 478489)
-				sprintf(str, " %d", it->gold);
+				sprintf(str, " %lld", it->gold);
 			else if (lb[i] == 478490)
-				sprintf(str, " %d", it->exp);
+				sprintf(str, " %lld", it->exp);
 
 			auto _lb = (SText*)m_pControlContainer->FindControl(lb[i]);
 			if (_lb)

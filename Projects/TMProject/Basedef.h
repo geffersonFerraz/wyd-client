@@ -1050,9 +1050,9 @@ struct stDropList
 
 	short Y;
 
-	long exp;
+	long long exp;
 
-	long gold;
+	long long gold;
 
 	STRUCT_ITEM carry[64];
 };
