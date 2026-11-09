@@ -55,7 +55,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
  
 int PacketSend = 0x528;
 int TMFieldScene::InitializeRankingSexy()
@@ -443,6 +443,7 @@ int CapeRankingSexy::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int
 	if (m_bOver == 0 && m_pDescPanel != nullptr)
 		m_pDescPanel->SetVisible(0);
 	 
+	return 0;
 } 
 
 void CapeRankingSexy::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int inParentLayer, int nFlag)
@@ -1324,7 +1325,7 @@ int CapeRankingSexy::OnControlEvent(DWORD idwControlID, DWORD idwEvent) {
 			pMsgSignalChar Signal{};
 			Signal.Header.Type = 0x912A;
 			Signal.Header.ID = g_pObjectManager->m_dwCharID;
-			Signal.Header.Size = sizeof Signal;
+			Signal.Header.Size = sizeof(Signal);
 
 			snprintf(Signal.Nick, sizeof(Signal.Nick), "%s", bb->m_pAltText->GetText());
 

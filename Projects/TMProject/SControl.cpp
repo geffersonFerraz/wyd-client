@@ -7,7 +7,7 @@
 #include "SControlContainer.h"
 #include "TMFieldScene.h"
 #include "TMSelectCharScene.h" 
-#include <WinSock2.h>
+#include <winsock2.h>
 #include "TMUtil.h"
 
 unsigned int SControl::m_dwStaticID{ 0 };

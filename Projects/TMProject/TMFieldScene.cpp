@@ -56,7 +56,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 
 #include "PremiumStore.h"
 #include "TMPaleta.h"
@@ -1531,7 +1531,7 @@ int TMFieldScene::InitializeScene()
 		m_pPremiumStoreSlot[i] = (SGridControl*)m_pControlContainer->FindControl(78001 + i);
 
 	}
-	for (int i = 0; i < 33; i++)
+	for (int i = 0; i < 32; i++)
 	{
 		m_pPremiumStorePrice[i] = (SText*)m_pControlContainer->FindControl(957001 + i);
 	}
@@ -2768,7 +2768,7 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 				pMsgSignalChar Signal{};
 				Signal.Header.Type = 0x912A;
 				Signal.Header.ID = g_pObjectManager->m_dwCharID;
-				Signal.Header.Size = sizeof Signal;
+				Signal.Header.Size = sizeof(Signal);
 
 				strncpy(Signal.Nick, m_pEditRank->GetText(), sizeof(Signal.Nick) - 1);
 				Signal.Nick[sizeof(Signal.Nick) - 1] = '\0'; // Assegura que o string é nulo-terminado
@@ -2794,7 +2794,7 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 				pMsgSignalChar Signal{};
 				Signal.Header.Type = 0x912A;
 				Signal.Header.ID = g_pObjectManager->m_dwCharID;
-				Signal.Header.Size = sizeof Signal;
+				Signal.Header.Size = sizeof(Signal);
 
 				strncpy(Signal.Nick, bb->GetText(), sizeof(Signal.Nick) - 1);
 				Signal.Nick[sizeof(Signal.Nick) - 1] = '\0'; // Assegura que o string é nulo-terminado
@@ -7712,7 +7712,7 @@ int TMFieldScene::OnPacketEvent(unsigned int dwCode, char* buf)
 	case 0x530:
 	{
 		auto Pack = (p528*)pStd;
-		memcpy(&_HudControl.Ranking, Pack, sizeof p528);
+		memcpy(&_HudControl.Ranking, Pack, sizeof(p528));
 
 		if (Pack->Update)
 		{ 
@@ -23070,7 +23070,7 @@ int TMFieldScene::OnKeyVisibleParty(char iCharCode, int lParam)
 	  
 	if (m_pListaGrupo->m_bVisible)
 	{
-		memset(&_HudControl.gListgrup, 0, sizeof MSG_ListaGrupo);
+		memset(&_HudControl.gListgrup, 0, sizeof(MSG_ListaGrupo));
 
 		auto Lideres = (SListBox*)m_pControlContainer->FindControl(19931);
 		if (Lideres)
@@ -26097,6 +26097,7 @@ int TMFieldScene::OnPacketStartTime(MSG_STANDARDPARM* pStd)
 		m_bRankTimeOn = 1;
 		return 1;
 	}
+	return 0;
 }
 
 int TMFieldScene::OnPacketRemainCount(MSG_STANDARDPARM* pStd)

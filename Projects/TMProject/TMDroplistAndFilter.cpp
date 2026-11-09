@@ -54,13 +54,13 @@
 #include "TMEffectDust.h"
 #include "TMGate.h"
 #include "TMScene.h"
-#include <WinInet.h>
+#include <wininet.h>
 #include <string>  
 #include <ctime>
 #include <regex> //require c++11
 #include "TMDroplistAndFilter.h"
 
-#include <WinInet.h>
+#include <wininet.h>
 #include <iostream>
 #include <sstream>
 #include <algorithm> // Incluir a biblioteca algorithm para usar a função transform 
@@ -537,12 +537,12 @@ void ReqDropList()
 		short Page;
 	};
 	TMP_ReqDrop packet;
-	memset(&packet, 0, sizeof TMP_ReqDrop);
+	memset(&packet, 0, sizeof(TMP_ReqDrop));
 
-	packet.Header.Size = sizeof TMP_ReqDrop;
+	packet.Header.Size = sizeof(TMP_ReqDrop);
 	packet.Header.Type = 0xCB5;
 	packet.Header.ID = g_pCurrentScene->m_dwID;
-	SendOneMessage((char*)&packet, sizeof TMP_ReqDrop);
+	SendOneMessage((char*)&packet, sizeof(TMP_ReqDrop));
 }
 
 #pragma region DROPLIST  
@@ -912,7 +912,7 @@ void TMFieldScene::SearchDropListUpdate()
 
 int TMFieldScene::TryDropFilter(MSG_pFilterDrop* pStd)
 {
-	memcpy(&_HudControl.Object_Human.DropFilterEvent.Items, pStd->Items, sizeof STRUCT_ITEM * 24);
+	memcpy(&_HudControl.Object_Human.DropFilterEvent.Items, pStd->Items, sizeof(STRUCT_ITEM) * 24);
 	_HudControl.Object_Human.DropFilterEvent.Code = pStd->Code;
 	_HudControl.Object_Human.DropFilterEvent.Type = pStd->Type;
 	UpdateFilterDrop();

@@ -9,6 +9,22 @@
 #include "PremiumStore.h"
 #include "TMDroplistAndFilter.h"
 
+// std::locale("") lanca excecao no mingw, que so aceita o locale "C".
+namespace
+{
+	class ThousandsPunct : public std::numpunct<char>
+	{
+	protected:
+		char do_thousands_sep() const override { return '.'; }
+		std::string do_grouping() const override { return "\3"; }
+	};
+
+	std::locale GetThousandsLocale()
+	{
+		return std::locale(std::locale::classic(), new ThousandsPunct);
+	}
+}
+
 int TMFieldScene::OnPacketUpdateMissionPass(pMsgSignalChar2* pStd)
 {
 	snprintf(_HudControl.LastMission,sizeof(_HudControl.LastMission), pStd->LastMission);
@@ -25,7 +41,7 @@ int TMFieldScene::OnPacketMissionInfo(MSG_STANDARD* pStd)
 
 	auto pPacket = (MSG_MISSIONINFO*)pStd;
 
-	memcpy(&_HudControl.gMissionPass, pPacket, sizeof MSG_MISSIONINFO);
+	memcpy(&_HudControl.gMissionPass, pPacket, sizeof(MSG_MISSIONINFO));
 
 	// Log básico sobre a missão
 	std::cout << "=== Missão Recebida ===" << std::endl;
@@ -189,13 +205,13 @@ int TMFieldScene::OnPacketMissionInfo(MSG_STANDARD* pStd)
 	}
 	// Para Exp
 	std::stringstream ssExp;
-	ssExp.imbue(std::locale(""));  // Configura para usar separador de milhares
+	ssExp.imbue(GetThousandsLocale());  // Configura para usar separador de milhares
 	ssExp << std::fixed << pPacket->Exp;  // Adiciona o valor de Exp formatado
 	std::string formattedExp = ssExp.str();  // Converte o stream formatado para string
 
 	// Para Gold
 	std::stringstream ssGold;
-	ssGold.imbue(std::locale(""));  // Configura para usar separador de milhares
+	ssGold.imbue(GetThousandsLocale());  // Configura para usar separador de milhares
 	ssGold << std::fixed << pPacket->Gold;  // Adiciona o valor de Gold formatado
 	std::string formattedGold = ssGold.str();  // Converte o stream formatado para string
 

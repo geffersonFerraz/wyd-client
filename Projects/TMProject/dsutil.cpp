@@ -146,7 +146,7 @@ HRESULT CSoundManager::Get3DListenerInterface(LPDIRECTSOUND3DLISTENER* ppDSListe
 	*ppDSListener = nullptr;
 	_DSBUFFERDESC dsbdesc{};
 
-	memset(&dsbdesc, 0, sizeof _DSBUFFERDESC);
+	memset(&dsbdesc, 0, sizeof(_DSBUFFERDESC));
 	dsbdesc.dwSize = sizeof(DSBUFFERDESC);
 	dsbdesc.dwFlags = DSBCAPS_CTRL3D | DSBCAPS_PRIMARYBUFFER;
 	

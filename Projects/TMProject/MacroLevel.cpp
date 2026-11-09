@@ -56,7 +56,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 
 Macro::Water_N::Water_N()
 {

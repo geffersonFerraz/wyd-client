@@ -115,7 +115,7 @@ public:
 	stTextureListInfo m_stEffectTextureList[512];
 	stTextureListInfo m_stModelTextureList[MAX_MODEL_TEXTURE];
 	stTextureListInfo m_stEnvTextureList[512];
-	IDirect3DTexture9* m_ppUITexture[512];
+	IDirect3DTexture9* m_ppUITexture[MAX_UI_TEXTURE];
 	IDirect3DTexture9* m_ppEffectTexture[512];
 	IDirect3DTexture9* m_ppModelTexture[MAX_MODEL_TEXTURE];
 	IDirect3DTexture9* m_ppEnvTexture[512];

@@ -53,7 +53,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 
 
 
@@ -73,7 +73,7 @@ void TMFieldScene::Profile(int handle)
 			pMsgSignal Signal{};
 			Signal.Header.Type = 0x487;
 			Signal.Header.ID = g_pObjectManager->m_dwCharID;
-			Signal.Header.Size = sizeof Signal;
+			Signal.Header.Size = sizeof(Signal);
 
 			Signal.Value = m_pPGTOver->m_dwID;
 

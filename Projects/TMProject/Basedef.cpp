@@ -3,7 +3,7 @@
 #include "TMGlobal.h"
 #include "TMLog.h"
 #include "ItemEffect.h"
-#include <WinInet.h>
+#include <wininet.h>
 
 char g_pAffectTable[MAX_EFFECT_STRING_TABLE][24];
 char g_pAffectSubTable[MAX_SUB_EFFECT_STRING_TABLE][24];

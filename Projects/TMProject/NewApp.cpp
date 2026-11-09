@@ -14,9 +14,9 @@
 #include "TMLog.h"
 #include "Basedef.h"
 #include "TMCamera.h"
-#include <WinInet.h>
+#include <wininet.h>
 #include "TMSkinMesh.h"
-#include "resource.h"
+#include "Resource.h"
 #include "TMHuman.h"
 #include "TMFieldScene.h"
 #include "SControlContainer.h"

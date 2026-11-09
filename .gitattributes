@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# O bash do Linux nao aceita CRLF, mesmo em um clone feito no Windows.
+*.sh text eol=lf
+# Binarios: nunca converter fim de linha.
+*.syso binary

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "CPSock.h"
-#include <WinSock2.h>
+#include <winsock2.h>
 #include "Basedef.h"
 #include "TMGlobal.h"
 #include "TMLog.h"

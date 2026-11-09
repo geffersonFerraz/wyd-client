@@ -53,7 +53,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 #include <string>  
 #include <ctime>
 #include <regex> //require c++11
@@ -119,7 +119,7 @@ int PremiumStoreOnPacketEvent(MSG_STANDARD* header)
 		{
 			Scene->m_pPremiumStoreSlot[i]->Empty();
 			Scene->m_pPremiumStoreSlot[i]->m_eGridType = TMEGRIDTYPE::GRID_PREMIUMSTORE;
-			memcpy(&g_PremiumData.FreeReward[i], &packet->FreeReward[i], sizeof STRUCT_ITEM);
+			memcpy(&g_PremiumData.FreeReward[i], &packet->FreeReward[i], sizeof(STRUCT_ITEM));
 
 			if (g_PremiumData.FreeReward[i].sIndex != 0)
 				Scene->m_pPremiumStoreSlot[i]->SetItemOnGrid(&g_PremiumData.FreeReward[i], 0, 0);
@@ -213,8 +213,8 @@ int PremiumStoreOnControlEvent(unsigned int idwControlID, unsigned int idwEvent)
 			return false;
 		}
 		MSG_BuyPremiumStore packet;
-		memset(&packet, 0, sizeof MSG_BuyPremiumStore);
-		packet.Header.Size = sizeof MSG_BuyPremiumStore;
+		memset(&packet, 0, sizeof(MSG_BuyPremiumStore));
+		packet.Header.Size = sizeof(MSG_BuyPremiumStore);
 		packet.Header.Type = 0xF03;
 		packet.Header.ID = Scene->m_dwID;
 		packet.Aba = g_PremiumData.Aba;
@@ -224,7 +224,7 @@ int PremiumStoreOnControlEvent(unsigned int idwControlID, unsigned int idwEvent)
 		packet.Price = g_PremiumData.price[g_PremiumData.SelectedSlot];
 		packet.Quant = g_PremiumData.BuyQuant;
 
-		SendOneMessage((char*)&packet, sizeof MSG_BuyPremiumStore);
+		SendOneMessage((char*)&packet, sizeof(MSG_BuyPremiumStore));
 		PremiumStoreOnControlEvent(82359, 0);
 		return true;
 	}
@@ -347,14 +347,14 @@ void ReqPremiumStore()
 		short Page;
 	};
 	TMP_ReqPremiumStore packet;
-	memset(&packet, 0, sizeof TMP_ReqPremiumStore);
+	memset(&packet, 0, sizeof(TMP_ReqPremiumStore));
 
-	packet.Header.Size = sizeof TMP_ReqPremiumStore;
+	packet.Header.Size = sizeof(TMP_ReqPremiumStore);
 	packet.Header.Type = reqCashShop;
 	packet.Header.ID = g_pCurrentScene->m_dwID;
 	packet.Aba = g_PremiumData.Aba;
 	packet.Page = g_PremiumData.Page;
-	SendOneMessage((char*)&packet, sizeof TMP_ReqPremiumStore);
+	SendOneMessage((char*)&packet, sizeof(TMP_ReqPremiumStore));
 } 
 
 

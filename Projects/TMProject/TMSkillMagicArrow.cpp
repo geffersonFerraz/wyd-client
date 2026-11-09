@@ -11,6 +11,12 @@
 TMSkillMagicArrow::TMSkillMagicArrow(TMVector3 vecStart, TMVector3 vecTarget, int nType, TMObject* pOwner)
 	: TMEffect()
 {
+	m_pLightMap = nullptr;
+	m_pEffectMesh = nullptr;
+	m_fAngle = 0.0f;
+	m_fRotAngle = 0.0f;
+	m_fProgress = 0.0f;
+
 	m_vecStartPos = TMVector3{};
 	m_vecTargetPos = TMVector3{};
 
