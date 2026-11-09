@@ -1038,7 +1038,7 @@ int TMSelectCharScene::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, i
 
 		pLevel->SetText(szValue, 0);
 
-		sprintf_s(szValue, "%10d", g_pObjectManager->m_stSelCharData.Coin[i]);
+		sprintf_s(szValue, "%10lld", g_pObjectManager->m_stSelCharData.Coin[i]);
 
 		pCoin->m_cComma = 1;
 		pCoin->SetText(szValue, 0);

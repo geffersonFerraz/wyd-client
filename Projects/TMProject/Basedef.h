@@ -111,6 +111,13 @@ struct MSG_STANDARDPARM
 	MSG_STANDARD Header;
 	int Parm;
 };
+
+// Gold signals (0x3AF, 0x339, 0x387, 0x388): 24 bytes.
+struct MSG_STANDARDPARM64
+{
+	MSG_STANDARD Header;
+	long long Parm;
+};
 struct MSG_Exp_MsgPanel
 {
 	MSG_STANDARD Header;
@@ -262,14 +269,14 @@ struct		stWaterScrollMacro
 struct STRUCT_SCORE
 {
 	short Level;
-	int Ac;
-	int Damage;
+	long long Ac;
+	long long Damage;
 	char Reserved;
 	char AttackRun;
-	int MaxHp;
-	int MaxMp;
-	int Hp;
-	int Mp;
+	long long MaxHp;
+	long long MaxMp;
+	long long Hp;
+	long long Mp;
 	short Str;
 	short Int;
 	short Dex;
@@ -388,7 +395,7 @@ struct STRUCT_SELCHAR
 	STRUCT_SCORE Score[4];
 	STRUCT_ITEM Equip[4][MAX_EQUIPITEM];
 	unsigned short Guild[4];
-	int Coin[4];
+	long long Coin[4];
 	long long Exp[4];
 };
  
@@ -401,7 +408,7 @@ struct STRUCT_MOB
 	char Class;
 	char Rsv;
 	unsigned short Quest;
-	int Coin;
+	long long Coin;
 	long long Exp;
 	unsigned short HomeTownX;
 	unsigned short HomeTownY;
@@ -585,7 +592,7 @@ struct STRUCT_EXT2
 struct STRUCT_DAM
 {
 	unsigned short TargetID;
-	int Damage;
+	long long Damage;
 };
 
 struct STRUCT_SPELL
@@ -1077,9 +1084,9 @@ struct MSG_DropList
 
 		short Y;
 
-		int exp;
+		long long exp;
 
-		int gold;
+		long long gold;
 
 		STRUCT_ITEM carry[64];
 
@@ -1109,7 +1116,7 @@ struct MSG_Trade
 	MSG_STANDARD Header;
 	STRUCT_ITEM Item[15];
 	char CarryPos[15];
-	int TradeMoney;
+	long long TradeMoney;
 	char MyCheck;
 	unsigned short OpponentID;
 };
@@ -1179,7 +1186,7 @@ struct MSG_CNFAccountLogin
 	char SecretCode[16];
 	STRUCT_SELCHAR SelChar;
 	STRUCT_ITEM Cargo[168];
-	int Coin;
+	long long Coin;
 	char AccountName[16];
 	int SSN1;
 	int SSN2;
@@ -1245,7 +1252,7 @@ constexpr auto MSG_CreateLeilaoStore_Opcode = 0x397;
 struct LeilaoStoreAux
 {
 	char LojinhaName[24];		   // Nome da loja
-	int Price;               // Preço do item
+	long long Price;               // Preço do item
 	int OwnerId;           // ID do dono do item (dono da loja) 
 	int SlotBank;               // Slot do item no banco
 	int Categoria;          // Categoria do item (1: Donate, 2: Gold, 3: Bis)
@@ -1359,7 +1366,7 @@ struct pAddItemAutoTrade
 	MSG_STANDARD Header;
 	int itemType;
 	int SlotBank;
-	int itemPrice;
+	long long itemPrice;
 	char Name[24];
 	STRUCT_ITEM Item;
 };
@@ -1370,7 +1377,7 @@ struct pStartNegotiation
 	int itemType;
 	int SlotBank;
 	int itemSlot;
-	int itemPrice;
+	long long itemPrice;
 	int itemTax;
 	int targetPlayerId; // ID do jogador com quem a negociação será feita
 	char Name[24];
@@ -1487,8 +1494,8 @@ struct MSG_UpdateScore
 	unsigned short Guild;
 	unsigned short GuildLevel;
 	char Resist[4];
-	int ReqHp;
-	int ReqMp;
+	long long ReqHp;
+	long long ReqMp;
 	unsigned short Magician;
 	unsigned short Rsv;
 	char LearnedSkill;
@@ -1507,13 +1514,13 @@ struct MSG_MessagePanel
 typedef struct
 {
 	MSG_STANDARD Header;
-	int Hold;
+	long long Hold;
 	long long Exp;
 	unsigned int LearnedSkill[2];
 	short ScoreBonus;
 	short SpecialBonus;
 	short SkillBonus;
-	int Coin;
+	long long Coin;
 } p337;
 
 constexpr auto MSG_CharPassword_Opcode = 0xFDE;
@@ -1588,7 +1595,7 @@ struct p114
 	short Weather; // 1044 - 1045
 	char SkillBar2[16]; // 1046 - 1061
 	STRUCT_AFFECT Affect[32];
-	int Hold;
+	long long Hold;
 	int unk;
 	int unk2;
 };
@@ -1653,7 +1660,7 @@ struct MSG_MISSIONINFO
 	STRUCT_ITEM FreeReward[6];
 	STRUCT_ITEM BattlePassReward[6];
 
-	int Gold;
+	long long Gold;
 	unsigned long long Exp;
 
 	STRUCT_ITEMDATE BattlePassValidation;
@@ -1760,8 +1767,8 @@ constexpr auto MSG_Attack_Two_Opcode = 0x39E;
 struct MSG_Attack
 {
 	MSG_STANDARD Header;
-	int FakeExp;
-	int ReqMp;
+	long long FakeExp;
+	long long ReqMp;
 	long long CurrentExp;
 	short Rsv;
 	unsigned short PosX;
@@ -1774,7 +1781,7 @@ struct MSG_Attack
 	char FlagLocal;
 	char DoubleCritical;
 	char SkillParm;
-	int CurrentMp;
+	long long CurrentMp;
 	short SkillIndex;
 	STRUCT_DAM Dam[13];
 };
@@ -1782,8 +1789,8 @@ struct MSG_Attack
 struct MSG_AttackTwo
 {
 	MSG_STANDARD Header;
-	int FakeExp;
-	int ReqMp;
+	long long FakeExp;
+	long long ReqMp;
 	long long CurrentExp;
 	short Rsv;
 	unsigned short PosX;
@@ -1796,7 +1803,7 @@ struct MSG_AttackTwo
 	char FlagLocal;
 	char DoubleCritical;
 	char SkillParm;
-	int CurrentMp;
+	long long CurrentMp;
 	short SkillIndex;
 	STRUCT_DAM Dam[2];
 };
@@ -1804,8 +1811,8 @@ struct MSG_AttackTwo
 struct MSG_AttackOne
 {
 	MSG_STANDARD Header;
-	int FakeExp;
-	int ReqMp;
+	long long FakeExp;
+	long long ReqMp;
 	long long CurrentExp;
 	short Rsv;
 	unsigned short PosX;
@@ -1818,7 +1825,7 @@ struct MSG_AttackOne
 	char FlagLocal;
 	char DoubleCritical;
 	char SkillParm;
-	int CurrentMp;
+	long long CurrentMp;
 	short SkillIndex;
 	STRUCT_DAM Dam[1];
 };
@@ -1890,7 +1897,7 @@ struct MSG_ReqBuy
 struct MSG_CNFMobKill
 {
 	MSG_STANDARD Header;
-	int FakeExp;
+	long long FakeExp;
 	unsigned short KilledMob;
 	unsigned short Killer;
 	long long Exp;
@@ -1938,7 +1945,7 @@ struct MSG_RemoveMob
 struct MSG_SetHpMode
 {
 	MSG_STANDARD Header;
-	int Hp;
+	long long Hp;
 	short Mode;
 };
 
@@ -1965,24 +1972,24 @@ struct MSG_DAILYREWARDINFO
 struct MSG_SetHpMp
 {
 	MSG_STANDARD Header;
-	int Hp;
-	int Mp;
-	int ReqHp;
-	int ReqMp;
+	long long Hp;
+	long long Mp;
+	long long ReqHp;
+	long long ReqMp;
 };
 
 struct MSG_SetHpDam
 {
 	MSG_STANDARD Header;
-	int Hp;
-	short Dam;
+	long long Hp;
+	long long Dam;
 };
 
 struct MSG_Carry
 {
 	MSG_STANDARD Header;
 	STRUCT_ITEM Carry[64];
-	int Coin;
+	long long Coin;
 };
 
 struct MSG_HellBuy
@@ -2031,7 +2038,7 @@ struct MSG_CNFRemoveServerLogin
 	STRUCT_SELCHAR SelChar;
 	char AccountName[16];
 	STRUCT_ITEM Cargo[168];
-	int Coin;
+	long long Coin;
 	char SecretCode[16];
 	int SSN1;
 	int SSN2;
@@ -2156,7 +2163,7 @@ struct st_SaldoLeilao
 {
 	MSG_STANDARD Header;
 	int Donate;
-	int Gold;
+	long long Gold;
 	int Bis;
 };
  
@@ -3612,7 +3619,7 @@ int BASE_GetColorCount(unsigned int dwColor);
 int BASE_GetManaSpent(int SkillNumber, int SaveMana, int Special);
 int BASE_GetSkillDamage(int dam, int ac, int combat);
 char* strfmt(const char* str, ...);
-int BASE_GetSkillDamage(int skillnum, STRUCT_MOB* mob, int weather, int weapondamage, int OriginalFace);
+long long BASE_GetSkillDamage(int skillnum, STRUCT_MOB* mob, int weather, int weapondamage, int OriginalFace);
 int BASE_CanEquip_RecvRes(STRUCT_REQ* req, STRUCT_ITEM* item, STRUCT_SCORE* score, int Pos, int Class, STRUCT_ITEM* pBaseEquip, int OriginalFace);
 int BASE_GetBonusItemAbilityNosanc(STRUCT_ITEM* item, char Type);;
 int BASE_GetBonusItemAbility(STRUCT_ITEM* item, char Type);

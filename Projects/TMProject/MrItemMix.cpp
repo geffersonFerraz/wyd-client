@@ -861,7 +861,7 @@ void CItemMix::ClickInvItem(SGridControlItem* pItem, SGridControl** GridInvList,
     }
 }
 
-void CItemMix::DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList, int Coin)
+void CItemMix::DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList, long long Coin)
 {
     int count = 0;
 
@@ -886,7 +886,7 @@ void CItemMix::DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList
                 }
             }
 
-            if (stResult_itemList[m_dResultIndex].dCost <= (unsigned int)Coin)
+            if (stResult_itemList[m_dResultIndex].dCost <= (unsigned long long)Coin)
             {
                 if (HardCode(MessagePanel, GridInvList))
                 {

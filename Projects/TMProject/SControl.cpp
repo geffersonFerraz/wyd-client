@@ -785,7 +785,7 @@ void SText::SetText(char* istrText, int bCheckZero)
 				++count;
 		}
 
-		if (!count && atoi(istrText))
+		if (!count && _atoi64(istrText))
 		{
 			char str[100]{};
 			for (size_t i = 0; i < strlen(istrText); ++i)
@@ -2031,7 +2031,7 @@ SProgressBar::~SProgressBar()
 		RemoveRenderControlItem(pControlContainer->m_pDrawControl, &m_GCProgress, m_GCProgress.nLayer);
 }
 
-void SProgressBar::SetCurrentProgress(int inCurrent)
+void SProgressBar::SetCurrentProgress(long long inCurrent)
 {
 	if (m_nCurrent != inCurrent)
 	{
@@ -2043,7 +2043,7 @@ void SProgressBar::SetCurrentProgress(int inCurrent)
 	}
 }
 
-void SProgressBar::SetMaxProgress(int inMax)
+void SProgressBar::SetMaxProgress(long long inMax)
 {
 	if (m_nMax != inMax)
 	{
@@ -2052,12 +2052,12 @@ void SProgressBar::SetMaxProgress(int inMax)
 	}
 }
 
-int SProgressBar::GetCurrentProgress()
+long long SProgressBar::GetCurrentProgress()
 {
 	return m_nCurrent;
 }
 
-int SProgressBar::GetMaxProgress()
+long long SProgressBar::GetMaxProgress()
 {
 	return m_nMax;
 }

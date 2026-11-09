@@ -83,7 +83,7 @@ public:
 	void UpdateScoreUI(unsigned int unFlag);
 	void UpdateSkillBelt();
 	void UpdateMyHuman();
-	void SetMyHumanExp(long long unExp, int nFakeExp);
+	void SetMyHumanExp(long long unExp, long long nFakeExp);
 	void IncSkillSel();
 	void SetShortSkill(int nIndex, SGridControlItem* pGridItem);
 	void SetSkillColor(TMHuman* pAttacker, char cSkillIndex);
@@ -285,7 +285,7 @@ public:
 	int OnPacketCNFAccountLogin(MSG_CNFRemoveServerLogin* pStd);
 	int OnPacketCNFCharacterLogin(p114* pStd);
 	int OnPacketItemSold(MSG_STANDARDPARM2* pStd);
-	int OnPacketUpdateCargoCoin(MSG_STANDARDPARM* pStd);
+	int OnPacketUpdateCargoCoin(MSG_STANDARDPARM64* pStd);
 	int OnPacketWeather(MSG_STANDARDPARM* pStd);
 	int OnPacketCreateItem(MSG_CreateItem* pMsg);
 	int OnPacketCNFDropItem(MSG_CNFDropItem* pMsg);
@@ -466,8 +466,8 @@ public:
 	int m_bInitGate;
 	int m_nMySanc;
 	int m_bMountDead;
-	unsigned short m_nReqHP;
-	unsigned int m_nReqMP;
+	long long m_nReqHP;
+	long long m_nReqMP;
 	TMEffectMesh* m_pTarget1;
 	TMEffectMesh* m_pTarget2;
 	TMEffectBillBoard2* m_pTargetBill;
@@ -605,7 +605,7 @@ public:
 	SText* m_pMoney2;
 	SText* m_pMoney3;
 	SText* m_pMoney4;
-	int m_Coin;
+	long long m_Coin;
 	int m_RMB;
 	SText* m_pCIName;
 	SText* m_pCIGuild;

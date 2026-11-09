@@ -3529,13 +3529,13 @@ int SGridControl::MouseOver(int nCellX, int nCellY, int bPtInRect)
 		}
 
 		int faceId = g_pObjectManager->m_stSelCharData.Equip[g_pObjectManager->m_cCharacterSlot][0].sIndex;
-		int nSkillDamage = BASE_GetSkillDamage(SkillNumber, mob, weather, pFScene->GetWeaponDamage(), faceId);
+		long long nSkillDamage = BASE_GetSkillDamage(SkillNumber, mob, weather, pFScene->GetWeaponDamage(), faceId);
 
 		char szText[128]{};
 		sprintf(szText, g_pMessageStringTable[51], g_pSpell[SkillNumber].InstanceValue);
 
 		if (nSkillDamage)
-			sprintf(szDesc, "%s ( %d )", szText, nSkillDamage);
+			sprintf(szDesc, "%s ( %lld )", szText, nSkillDamage);
 		else
 			sprintf(szDesc, "%s", szText);
 
@@ -4620,7 +4620,7 @@ int SGridControl::MouseOver(int nCellX, int nCellY, int bPtInRect)
 		{
 			char szText[128] = ""; // Inicializa szText com uma string vazia
 			 
-			int nPrice = m_nTradeMoney;
+			long long nPrice = m_nTradeMoney;
 			int nTipy = m_nLeilaoStoreTipo;
 			
 			char szPrice[128];
@@ -4628,9 +4628,9 @@ int SGridControl::MouseOver(int nCellX, int nCellY, int bPtInRect)
 			char szPrice3[128];
 			char szPrice4[128];
 			  
-			sprintf(szPrice2, "%d", nPrice % 10000);
-			sprintf(szPrice3, g_pMessageStringTable[283], nPrice / 10000 % 10000);
-			sprintf(szPrice4, g_pMessageStringTable[282], nPrice / 100000000);
+			sprintf(szPrice2, "%lld", nPrice % 10000);
+			sprintf(szPrice3, g_pMessageStringTable[283], (int)(nPrice / 10000 % 10000));
+			sprintf(szPrice4, g_pMessageStringTable[282], (int)(nPrice / 100000000));
 			 
 			if(nTipy == 1)
 			{
@@ -4667,7 +4667,7 @@ int SGridControl::MouseOver(int nCellX, int nCellY, int bPtInRect)
 
 				if (List.Item.sIndex && List.Categoria != 0)
 				{
-					int nPrice = List.Price;
+					long long nPrice = List.Price;
 
 					int nTipy = List.Categoria;
 
@@ -5440,7 +5440,7 @@ void SGridControl::UpdateCapsuleInfo(int nIndex)
 }
 
 /*Metodos Busca sistema leilao store*/
-std::string SGridControl::FormatPrice(int price) {
+std::string SGridControl::FormatPrice(long long price) {
 	std::string result = std::to_string(price);
 	int insertPosition = result.length() - 3;
 
@@ -5456,16 +5456,16 @@ char SGridControl::AutoSellShowPrice(char* Price)
 	if (m_eGridType != TMEGRIDTYPE::GRID_TRADEMY2 && m_eGridType != TMEGRIDTYPE::GRID_TRADEOP)
 		return 0;
 
-	int nPrice = m_nTradeMoney;
+	long long nPrice = m_nTradeMoney;
 
 	char szPrice[128];
 	char szPrice2[128];
 	char szPrice3[128];
 	char szPrice4[128];
 
-	sprintf(szPrice2, "%d", nPrice % 10000);
-	sprintf(szPrice3, g_pMessageStringTable[283], nPrice / 10000 % 10000);
-	sprintf(szPrice4, g_pMessageStringTable[282], nPrice / 100000000);
+	sprintf(szPrice2, "%lld", nPrice % 10000);
+	sprintf(szPrice3, g_pMessageStringTable[283], (int)(nPrice / 10000 % 10000));
+	sprintf(szPrice4, g_pMessageStringTable[282], (int)(nPrice / 100000000));
 	if (nPrice % 10000 <= 0)
 	{
 		if (nPrice / 10000 % 10000 <= 0)

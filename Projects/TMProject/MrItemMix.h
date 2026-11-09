@@ -27,7 +27,7 @@ public:
 	void CheckInv(SGridControl** GridInvList);
 	void SetTextList();
 	void ClickInvItem(SGridControlItem* pItem, SGridControl** GridInvList, short Sourpage);
-	void DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList, int Coin);
+	void DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList, long long Coin);
 	int IsSameItem(STRUCT_MYITEM* Item1, STRUCT_ITEM* Item2, short deep);
 	int IsSameItem(STRUCT_ITEM* Item1, STRUCT_ITEM* Item2, short deep);
 	int IsItemOption_Satisfaction(int index, STRUCT_ITEM* item);

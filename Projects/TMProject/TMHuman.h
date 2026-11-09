@@ -40,7 +40,7 @@ struct stGuildMarkInfo
 struct stPunchEvent
 {
     unsigned int dwTime;
-    int nDamage;
+    long long nDamage;
     TMVector2 vecFrom;
 };
 
@@ -89,7 +89,7 @@ public:
     int OnPacketMessageChat_Param(MSG_STANDARD* pStd);
     int OnPacketMessageWhisper(MSG_MessageWhisper* pMsg);
     int OnPacketUpdateEtc(MSG_STANDARD* pStd);
-    int OnPacketUpdateCoin(MSG_STANDARDPARM* pStd);
+    int OnPacketUpdateCoin(MSG_STANDARDPARM64* pStd);
     int OnPacketUpdateRMB(MSG_STANDARDPARM* pStd);
     int OnPacketTrade(MSG_Trade* pStd);
     int OnPacketQuitTrade(MSG_STANDARD* pStd);
@@ -119,8 +119,8 @@ public:
     void MoveGet(TMItem* pTarget);
     void Attack(ECHAR_MOTION eMotion, TMVector2 vecTarget, char cSkillIndex);
     void Attack(ECHAR_MOTION eMotion, TMHuman* pTarget, short cSkillIndex);
-    void Punched(int nDamage, TMVector2 vecFrom);
-    void Punched(int nDamage, TMHuman* pFrom);
+    void Punched(long long nDamage, TMVector2 vecFrom);
+    void Punched(long long nDamage, TMHuman* pFrom);
     void Fire(TMObject* pTarget, int nSkill);
     void Die();
     void Stand();
@@ -155,7 +155,7 @@ public:
     void UpdateMount();
     float GetMyHeight();
     void SetGuildBattleHPColor();
-    void SetGuildBattleHPBar(int nHP);
+    void SetGuildBattleHPBar(long long nHP);
     void SetGuildBattleLifeCount();
     int Is2stClass();
     int IAmkhepra();
@@ -207,12 +207,12 @@ public:
     SANC_INFO m_stOldSancInfo;
     SANC_INFO m_stOldColorInfo;
     unsigned int m_dwDelayDel;
-    unsigned int m_BigHp;
-    unsigned int m_MaxBigHp;
-    unsigned int m_usHP;
-    unsigned int m_BigMp;
-    unsigned int m_MaxBigMp;
-    unsigned int m_usMP;
+    long long m_BigHp;
+    long long m_MaxBigHp;
+    long long m_usHP;
+    long long m_BigMp;
+    long long m_MaxBigMp;
+    long long m_usMP;
     float m_fMaxSpeed;
     float m_fMoveToAngle;
     float m_fCurrAng;

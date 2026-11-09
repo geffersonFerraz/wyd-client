@@ -26,7 +26,7 @@ public:
     void ClearResultGridList();
     void ClearNeedGridList();
     void SetTextList();
-    void DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList, int Class, int Lev, int Coin);
+    void DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList, int Class, int Lev, long long Coin);
 
 public:
     SControlContainer* m_pControlContainer;

@@ -63,7 +63,7 @@ public:
     int IsFocused();
     int IsOver();
     TMVector2 GetPos();
-    std::string FormatPriceInKKK(int price);
+    std::string FormatPriceInKKK(long long price);
    
     virtual int ChildCount();
     virtual void SetPos(float nPosX, float nPosY);
@@ -378,18 +378,18 @@ public:
         unsigned int idwProgressColor, unsigned int idwColor, unsigned int dwStyle);
     ~SProgressBar();
 
-    virtual void SetCurrentProgress(int inCurrent);
-    virtual void SetMaxProgress(int inMax);
-    virtual int GetCurrentProgress();
-    virtual int GetMaxProgress();
+    virtual void SetCurrentProgress(long long inCurrent);
+    virtual void SetMaxProgress(long long inMax);
+    virtual long long GetCurrentProgress();
+    virtual long long GetMaxProgress();
     void Update() override;
     void FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int inParentLayer, int nFlag) override;
     virtual void ResetBar();
 
 public:
     unsigned int m_dwStyle;
-    int m_nCurrent;
-    int m_nMax;
+    long long m_nCurrent;
+    long long m_nMax;
     float m_nProgressWidth;
     float m_nProgressHeight;
     GeomControl m_GCProgress;

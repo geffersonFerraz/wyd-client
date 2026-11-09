@@ -97,7 +97,7 @@ void TMFieldScene::SendReqListaGrupoEntrar()//aqui compra o item
 	sendPacket.Header.Type = MSG_ReqBuy_Opcode;
 	sendPacket.targetPlayerId = m_stAutoTrade.List[m_bCurrentSlotLeilao].OwnerId;
 	sendPacket.itemSlot = m_bCurrentSlotLeilao;
-	sendPacket.itemPrice = static_cast<int>(m_stAutoTrade.List[m_bCurrentSlotLeilao].Price);
+	sendPacket.itemPrice = static_cast<long long>(m_stAutoTrade.List[m_bCurrentSlotLeilao].Price);
 	sendPacket.itemType = static_cast<int>(m_stAutoTrade.List[m_bCurrentSlotLeilao].Categoria);
 	sendPacket.itemTax = static_cast<int>(m_stAutoTrade.List[m_bCurrentSlotLeilao].TaxRate);
 	sendPacket.SlotBank = static_cast<int>(m_stAutoTrade.List[m_bCurrentSlotLeilao].SlotBank);

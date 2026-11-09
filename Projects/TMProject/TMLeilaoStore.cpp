@@ -65,7 +65,7 @@ int TMFieldScene::m_nCurrentSlobankLeilao;
 int TMFieldScene::m_nLeilaoStoreCurrentPage = 0; // Página atual
 int TMFieldScene::m_nLeilaoStoreTotalPages = 1;  // Total de páginas
  
-std::string SControl::FormatPriceInKKK(int price) {
+std::string SControl::FormatPriceInKKK(long long price) {
 	std::string result;
 
 	if (price >= 1000000000) { // Bilhões (1KKK ou mais)
@@ -478,11 +478,11 @@ int TMFieldScene::LeilaoButtonAction(int idwControlID)
 				return 1;
 			}
 
-			if (m_nCoinMsgType == 4 && nInputValue > 1999999999)
+			if (m_nCoinMsgType == 4 && nInputValue > 1000000000000000LL)
 			{
 				char istrMessage[128]{};
 
-				sprintf_s(istrMessage, "Limite para definição de valores é de até %2d", 2000000000);
+				sprintf_s(istrMessage, "Limite para definição de valores é de até %lld", 1000000000000000LL);
 
 				m_pMessagePanel->SetMessage(istrMessage, 1000);
 				m_pMessagePanel->SetVisible(1, 1);
@@ -522,14 +522,14 @@ int TMFieldScene::LeilaoButtonAction(int idwControlID)
 				SendPacket.Header.Type = 0x397C;
 
 				SendPacket.SlotBank = m_nCurrentSlobankLeilao;
-				SendPacket.itemPrice = static_cast<int>(nInputValue);
+				SendPacket.itemPrice = nInputValue;
 				SendPacket.itemType = static_cast<int>(m_bCurrentTipeLeilao);
 
 				memcpy(&SendPacket.Name, m_stAutoTrade.List[m_bCurrentSlotLeilao].LojinhaName, sizeof(m_stAutoTrade.List[m_bCurrentSlotLeilao].LojinhaName));
 
 				memcpy(&SendPacket.Item, pItem, sizeof(STRUCT_ITEM));
 
-				pParent->m_nTradeMoney = static_cast<int>(nInputValue);
+				pParent->m_nTradeMoney = nInputValue;
 				SendOneMessage((char*)&SendPacket, sizeof(pAddItemAutoTrade));
 				m_nCurrentSlobankLeilao = -1;
 				m_stAutoTrade.List[m_bCurrentSlotLeilao].Categoria = -1;
@@ -843,7 +843,7 @@ void TMFieldScene::UpdateElementesLeilaoStore() {
 		}
 		else if (m_stAutoTrade.List[i].Categoria == 2)
 		{
-			sprintf(szText, "%d Gold", m_stAutoTrade.List[i].Price);
+			sprintf(szText, "%lld Gold", m_stAutoTrade.List[i].Price);
 		}
 		else if (m_stAutoTrade.List[i].Categoria == 3)
 		{
@@ -1089,7 +1089,7 @@ void TMFieldScene::SendReqLeilaoBuy()//aqui compra o item
 	sendPacket.Header.Type = MSG_ReqBuy_Opcode;
 	sendPacket.targetPlayerId = m_stAutoTrade.List[m_bCurrentSlotLeilao].OwnerId;
 	sendPacket.itemSlot = m_bCurrentSlotLeilao;
-	sendPacket.itemPrice = static_cast<int>(m_stAutoTrade.List[m_bCurrentSlotLeilao].Price);
+	sendPacket.itemPrice = static_cast<long long>(m_stAutoTrade.List[m_bCurrentSlotLeilao].Price);
 	sendPacket.itemType = static_cast<int>(m_stAutoTrade.List[m_bCurrentSlotLeilao].Categoria);
 	sendPacket.itemTax = static_cast<int>(m_stAutoTrade.List[m_bCurrentSlotLeilao].TaxRate);
 	sendPacket.SlotBank = static_cast<int>(m_stAutoTrade.List[m_bCurrentSlotLeilao].SlotBank);
@@ -1235,7 +1235,7 @@ int TMFieldScene::OnReceivingLeilaoStores(MSG_STANDARD* pStd)
 				m_pBlocoX48->SetSizePanels(i, 23.0f, 23.0f);
 				m_pBlocoX48->SetTextureSetIndexForPanel(i, 765); // Bis
 			}
-			int nPrice = m_stAutoTrade.List[i].Price;
+			long long nPrice = m_stAutoTrade.List[i].Price;
 
 			int nTipy = m_stAutoTrade.List[i].Categoria;
 

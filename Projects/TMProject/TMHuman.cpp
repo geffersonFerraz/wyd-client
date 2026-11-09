@@ -3524,7 +3524,7 @@ int TMHuman::OnPacketEvent(unsigned int dwCode, char* buf)
         return OnPacketUpdateEtc((MSG_STANDARD*)buf);
         break;
     case 0x3AF:
-        return OnPacketUpdateCoin(reinterpret_cast<MSG_STANDARDPARM*>(buf));
+        return OnPacketUpdateCoin(reinterpret_cast<MSG_STANDARDPARM64*>(buf));
         break;
     case 0x1CF:
         return OnPacketUpdateRMB(reinterpret_cast<MSG_STANDARDPARM*>(buf));
@@ -4861,28 +4861,28 @@ int TMHuman::OnPacketSetHpMp(MSG_SetHpMp* pStd)
         if (pFScene->m_pCurrentHPText)
         {
             char szHP[32]{};
-            sprintf(szHP, "%d", m_stScore.Hp);
+            sprintf(szHP, "%lld", m_stScore.Hp);
             if (pFScene->m_pCurrentHPText)
                 pFScene->m_pCurrentHPText->SetText(szHP, 0);
         }
         if (pFScene->m_pMaxHPText)
         {
             char szHP[32]{};
-            sprintf(szHP, "/ %d", m_stScore.MaxHp);
+            sprintf(szHP, "/ %lld", m_stScore.MaxHp);
             if (pFScene->m_pMaxHPText)
                 pFScene->m_pMaxHPText->SetText(szHP, 0);
         }
         if (pFScene->m_pCurrentMPText)
         {
             char szMP[32]{};
-            sprintf(szMP, "%d", m_stScore.Mp);
+            sprintf(szMP, "%lld", m_stScore.Mp);
             if (pFScene->m_pCurrentMPText)
                 pFScene->m_pCurrentMPText->SetText(szMP, 0);
         }
         if (pFScene->m_pMaxMPText)
         {
             char szMP[32]{};
-            sprintf(szMP, "/ %d", m_stScore.MaxMp);
+            sprintf(szMP, "/ %lld", m_stScore.MaxMp);
             if (pFScene->m_pMaxMPText)
                 pFScene->m_pMaxMPText->SetText(szMP, 0);
         }
@@ -4977,7 +4977,7 @@ int TMHuman::OnPacketSetHpDam(MSG_STANDARD* pStd)
             dwColor = 0xFF5555FF;
             if (pSetHpDam->Dam)
             {
-                sprintf(szVal, "+ %d", pSetHpDam->Dam);
+                sprintf(szVal, "+ %lld", pSetHpDam->Dam);
                 pFont = new TMFont3(szVal,
                     nTX,
                     nTY + (int)(RenderDevice::m_fHeightRatio * 80.0f),
@@ -5007,7 +5007,7 @@ int TMHuman::OnPacketSetHpDam(MSG_STANDARD* pStd)
         if (pCurrentHPText)
         {
             char szHP[32]{};
-            sprintf(szHP, "%d", m_stScore.Hp);
+            sprintf(szHP, "%lld", m_stScore.Hp);
             pCurrentHPText->SetText(szHP, 0);
         }
     }
@@ -5325,7 +5325,7 @@ int TMHuman::OnPacketUpdateEtc(MSG_STANDARD* pStd)
     return 1;
 }
 
-int TMHuman::OnPacketUpdateCoin(MSG_STANDARDPARM* pStd)
+int TMHuman::OnPacketUpdateCoin(MSG_STANDARDPARM64* pStd)
 {
     if (g_pCurrentScene->m_pMyHuman == this)
     {
@@ -5391,7 +5391,7 @@ int TMHuman::OnPacketTrade(MSG_Trade* pStd)
         auto pOPGold = (SText*)pScene->m_pControlContainer->FindControl(603);
 
         char szGold[128]{};
-        sprintf(szGold, "%10d", pStd->TradeMoney);
+        sprintf(szGold, "%10lld", pStd->TradeMoney);
         if (bChanged == 1 || strcmp(szGold, pOPGold->GetText()))
         {
             auto pMyCheck = (SButton*)pScene->m_pControlContainer->FindControl(617);
@@ -5831,25 +5831,25 @@ void TMHuman::UpdateScore(int nGuildLevel)
                     m_stScore.Hp = m_stScore.MaxHp;
 
                 char szHP[32] = { 0 };
-                sprintf_s(szHP, "%d", m_stScore.Hp);
+                sprintf_s(szHP, "%lld", m_stScore.Hp);
                 pCurrentHPText->SetText(szHP, 0);
             }
             if (pMaxHPText)
             {
                 char _Buffer[32] = { 0 };
-                sprintf_s(_Buffer, "/ %d", m_stScore.MaxHp);
+                sprintf_s(_Buffer, "/ %lld", m_stScore.MaxHp);
                 pMaxHPText->SetText(_Buffer, 0);
             }
             if (pCurrentMPText)
             {
                 char szMP[32] = { 0 };
-                sprintf_s(szMP, "%d", m_stScore.Mp);
+                sprintf_s(szMP, "%lld", m_stScore.Mp);
                 pCurrentMPText->SetText(szMP, 0);
             }
             if (pMaxMPText)
             {
                 char szMP[32] = { 0 };
-                sprintf_s(szMP, "/ %d", m_stScore.MaxMp);
+                sprintf_s(szMP, "/ %lld", m_stScore.MaxMp);
                 pMaxMPText->SetText(szMP, 0);
             }
             if (pHPBar)
@@ -5890,8 +5890,8 @@ void TMHuman::UpdateScore(int nGuildLevel)
             if (m_pTitleNameLabel)
             {
                 char szMyMob3[128] = { 0 };
-                int currentHp = m_stScore.Hp; // HP atual do personagem
-                int maxHp = m_stScore.MaxHp; // HP máximo do personagem
+                long long currentHp = m_stScore.Hp; // HP atual do personagem
+                long long maxHp = m_stScore.MaxHp; // HP máximo do personagem
 
                 float hpPercentage = (currentHp / static_cast<float>(maxHp)) * 100.0f;
 
@@ -12145,7 +12145,7 @@ void TMHuman::Attack(ECHAR_MOTION eMotion, TMHuman* pTarget, short cSkillIndex)
     }
 }
 
-void TMHuman::Punched(int nDamage, TMVector2 vecFrom)
+void TMHuman::Punched(long long nDamage, TMVector2 vecFrom)
 {
     if (m_dwDelayDel)
         return;
@@ -12221,25 +12221,25 @@ void TMHuman::Punched(int nDamage, TMVector2 vecFrom)
             if (pFScene->m_pCurrentHPText)
             {
                 char szHP[32]{};
-                sprintf(szHP, "%d", m_stScore.Hp);
+                sprintf(szHP, "%lld", m_stScore.Hp);
                 pFScene->m_pCurrentHPText->SetText(szHP, 0);
             }
             if (pFScene->m_pMaxHPText)
             {
                 char szHP[32]{};
-                sprintf(szHP, "/ %d", m_stScore.MaxHp);
+                sprintf(szHP, "/ %lld", m_stScore.MaxHp);
                 pFScene->m_pMaxHPText->SetText(szHP, 0);
             }
             if (pFScene->m_pCurrentMPText)
             {
                 char szMP[32]{};
-                sprintf(szMP, "%d", m_stScore.Mp);
+                sprintf(szMP, "%lld", m_stScore.Mp);
                 pFScene->m_pCurrentMPText->SetText(szMP, 0);
             }
             if (pFScene->m_pMaxMPText)
             {
                 char szMP[32]{};
-                sprintf(szMP, "/ %d", m_stScore.MaxMp);
+                sprintf(szMP, "/ %lld", m_stScore.MaxMp);
                 pFScene->m_pMaxMPText->SetText(szMP, 0);
             }
             if (pFScene->m_pCurrentMHPText && m_pMountHPBar)
@@ -12299,7 +12299,7 @@ void TMHuman::Punched(int nDamage, TMVector2 vecFrom)
     }
 }
 
-void TMHuman::Punched(int nDamage, TMHuman* pFrom)
+void TMHuman::Punched(long long nDamage, TMHuman* pFrom)
 {
     if (m_dwDelayDel || !pFrom)
         return;
@@ -12361,25 +12361,25 @@ void TMHuman::Punched(int nDamage, TMHuman* pFrom)
             if (pFScene->m_pCurrentHPText)
             {
                 char szHP[32]{};
-                sprintf(szHP, "%d", m_stScore.Hp);
+                sprintf(szHP, "%lld", m_stScore.Hp);
                 pFScene->m_pCurrentHPText->SetText(szHP, 0);
             }
             if (pFScene->m_pMaxHPText)
             {
                 char szHP[32]{};
-                sprintf(szHP, "/ %d", m_stScore.MaxHp);
+                sprintf(szHP, "/ %lld", m_stScore.MaxHp);
                 pFScene->m_pMaxHPText->SetText(szHP, 0);
             }
             if (pFScene->m_pCurrentMPText)
             {
                 char szMP[32]{};
-                sprintf(szMP, "%d", m_stScore.Mp);
+                sprintf(szMP, "%lld", m_stScore.Mp);
                 pFScene->m_pCurrentMPText->SetText(szMP, 0);
             }
             if (pFScene->m_pMaxMPText)
             {
                 char szMP[32]{};
-                sprintf(szMP, "/ %d", m_stScore.MaxMp);
+                sprintf(szMP, "/ %lld", m_stScore.MaxMp);
                 pFScene->m_pMaxMPText->SetText(szMP, 0);
             }
             if (pFScene->m_pCurrentMHPText && m_pMountHPBar)
@@ -15898,7 +15898,7 @@ void TMHuman::SetGuildBattleHPColor()
     // It's an empty function... yeah! 
 }
 
-void TMHuman::SetGuildBattleHPBar(int nHP)
+void TMHuman::SetGuildBattleHPBar(long long nHP)
 {
     // It's an empty function... yeah! 
 }

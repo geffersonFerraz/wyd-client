@@ -74,9 +74,9 @@ public:
 	STRUCT_ITEM m_stItemCargo[168]; //128
 	STRUCT_MOB m_stMobData;
 	MSG_CAPSULEINFO m_stCapsuleInfo[12];
-	int m_nFakeExp;
+	long long m_nFakeExp;
 	int m_nAuto;
-	int m_nCargoCoin;
+	long long m_nCargoCoin;
 	int m_RMBCount;
 	int m_RMBShopOpen;
 	unsigned int m_dwCharID;

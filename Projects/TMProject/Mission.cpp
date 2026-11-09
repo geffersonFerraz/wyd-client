@@ -88,6 +88,6 @@ void CMission::SetTextList()
 {
 }
 
-void CMission::DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList, int Class, int Lev, int Coin)
+void CMission::DoCombine(SMessagePanel* MessagePanel, SGridControl** GridInvList, int Class, int Lev, long long Coin)
 {
 }

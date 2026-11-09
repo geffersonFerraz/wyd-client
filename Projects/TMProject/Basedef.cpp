@@ -2077,7 +2077,7 @@ char* strfmt(const char* str, ...)
     return buffer;
 }
 
-int BASE_GetSkillDamage(int skillnum, STRUCT_MOB* mob, int weather, int weapondamage, int OriginalFace)
+long long BASE_GetSkillDamage(int skillnum, STRUCT_MOB* mob, int weather, int weapondamage, int OriginalFace)
 {
     int instanceindex = g_pSpell[skillnum].InstanceType;
 
@@ -2091,7 +2091,7 @@ int BASE_GetSkillDamage(int skillnum, STRUCT_MOB* mob, int weather, int weaponda
     int base = g_pSpell[skillnum].InstanceValue;
     int affectbase = g_pSpell[skillnum].AffectValue;
     int skillclass = skillnum / 8 % 3;
-    int dam = 0;
+    long long dam = 0;
 
     if (instanceindex == 0)
     {

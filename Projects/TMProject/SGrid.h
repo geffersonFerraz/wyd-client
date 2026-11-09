@@ -103,7 +103,7 @@ public:
     char AutoSellShowPrice(char* Price);
     char LeilaoStoreShowPrice(char* Price);
 
-    std::string FormatPrice(int price);
+    std::string FormatPrice(long long price);
     char automove(int nCellX, int nCellY);
     int Check_ItemRightClick(int nType, int nItemSIndex);
   
@@ -126,7 +126,7 @@ public:
     unsigned int m_dwEnableColor;
     IVector2 m_vecPickupedPos;
     IVector2 m_vecPickupedSize;
-    int m_nTradeMoney;
+    long long m_nTradeMoney;
     int m_nLeilaoStoreTipo = 0;
     unsigned int m_dwLastSortTime;
     int _nCellX;
