@@ -27,6 +27,7 @@ public:
     void SetCustomFireWork(char* pBuffer);
 
 public:
+    TMVector3 m_vecPosition;
     int m_nType;
     unsigned int m_dwColor;
     RDLVERTEX m_vertex[4];

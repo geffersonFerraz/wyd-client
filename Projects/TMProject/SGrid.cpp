@@ -5664,6 +5664,8 @@ int SGridControl::Check_ItemRightClick(int nType, int nItemSIndex)
 		return 1;
 	case 18:
 		return 1;
+	case 19:
+		return nItemSIndex == 1728; // other firework items have no server handler
 	case 140:
 		return 1;
 	case 170:
