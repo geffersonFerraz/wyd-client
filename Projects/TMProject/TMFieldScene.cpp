@@ -5922,7 +5922,7 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 			g_pObjectManager->m_stTrade.Header.Type = 0x383;
 			g_pObjectManager->m_stTrade.Header.ID = m_pMyHuman->m_dwID;
 			g_pObjectManager->m_stTrade.OpponentID = m_dwOpID;
-			SendOneMessage((char*)&g_pObjectManager->m_stTrade, 156);
+			SendOneMessage((char*)&g_pObjectManager->m_stTrade, sizeof(g_pObjectManager->m_stTrade));
 
 			m_dwOpID = 0;
 			m_pPGTPanel->SetVisible(0);

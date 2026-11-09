@@ -4904,7 +4904,7 @@ void SGridControl::RButton(int nCellX, int nCellY, int bPtInRect)
 				{
 					stAttack.Header.Type = MSG_Attack_One_Opcode;
 					nSize = sizeof(MSG_AttackOne);
-					SendOneMessage((char*)&stAttack, 72);
+					SendOneMessage((char*)&stAttack, nSize);
 				}
 
 				MSG_Attack stAttackLocal{};

@@ -151,7 +151,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148720);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[1], 8);
+		memcpy(item, &request->Equip[1], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -160,7 +160,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148721);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[2], 8);
+		memcpy(item, &request->Equip[2], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -169,7 +169,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148722);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[3], 8);
+		memcpy(item, &request->Equip[3], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -178,7 +178,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148723);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[4], 8);
+		memcpy(item, &request->Equip[4], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -187,7 +187,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148724);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[5], 8);
+		memcpy(item, &request->Equip[5], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -196,7 +196,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148725);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[6], 8);
+		memcpy(item, &request->Equip[6], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -205,7 +205,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148726);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[7], 8);
+		memcpy(item, &request->Equip[7], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -214,7 +214,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148727);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[12], 8);
+		memcpy(item, &request->Equip[12], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -223,7 +223,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148728);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[14], 8);
+		memcpy(item, &request->Equip[14], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -232,7 +232,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148729);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[18], 8);
+		memcpy(item, &request->Equip[18], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -241,7 +241,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148730);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[8], 8);
+		memcpy(item, &request->Equip[8], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -250,7 +250,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148731);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[10], 8);
+		memcpy(item, &request->Equip[10], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -259,7 +259,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148733);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[9], 8);
+		memcpy(item, &request->Equip[9], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -268,7 +268,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148734);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[11], 8);
+		memcpy(item, &request->Equip[11], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	}
@@ -277,7 +277,7 @@ void TMFieldScene::ProfileUpdate(p487* request)
 		auto _slot = (SGridControl*)m_pControlContainer->FindControl(148732);
 
 		STRUCT_ITEM* item = new STRUCT_ITEM;
-		memcpy(item, &request->Equip[13], 8);
+		memcpy(item, &request->Equip[13], sizeof(STRUCT_ITEM));
 		_slot->AddItem(new SGridControlItem(nullptr, item, 0.0f, 0.0f), 0, 0);
 		_slot->m_eGridType = TMEGRIDTYPE::GRID_SKILLB;
 	} 

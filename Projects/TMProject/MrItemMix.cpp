@@ -133,7 +133,6 @@ void CItemMix::ResultItemListSet(unsigned int Head, int X, int Y)
             {
                 pstItem->stEffect[j].cEffect = stResult_itemList[m_dResultIndexList[i]].stItemInfor.stEffect[j].cEffect;
                 pstItem->stEffect[j].cValue = stResult_itemList[m_dResultIndexList[i]].stItemInfor.stEffect[j].cValue;
-                pstItem->stEffect[j].sValue = stResult_itemList[m_dResultIndexList[i]].stItemInfor.stEffect[j].sValue;
             }
 
             m_pGridResultItem[count]->m_eGridType = TMEGRIDTYPE::GRID_ITEMMIXRESULT;
@@ -577,7 +576,6 @@ void CItemMix::ClickInvItem(SGridControlItem* pItem, SGridControl** GridInvList,
                     {
                         newItem->stEffect[kh].cEffect = pItem->m_pItem->stEffect[kh].cEffect;
                         newItem->stEffect[kh].cValue = pItem->m_pItem->stEffect[kh].cValue;
-                        newItem->stEffect[kh].sValue = pItem->m_pItem->stEffect[kh].sValue;
                     }
 
                     m_pGridNeedItem[i]->AddItem(new SGridControlItem(nullptr, newItem, 0.0f, 0.0f), 0, 0);
@@ -633,7 +631,6 @@ void CItemMix::ClickInvItem(SGridControlItem* pItem, SGridControl** GridInvList,
                     {
                         newItem->stEffect[kh].cEffect = pItem->m_pItem->stEffect[kh].cEffect;
                         newItem->stEffect[kh].cValue = pItem->m_pItem->stEffect[kh].cValue;
-                        newItem->stEffect[kh].sValue = pItem->m_pItem->stEffect[kh].sValue;
                     }
 
                     m_pGridNeedItem[i]->AddItem(new SGridControlItem(nullptr, newItem, 0.0f, 0.0f), 0, 0);
@@ -704,7 +701,6 @@ void CItemMix::ClickInvItem(SGridControlItem* pItem, SGridControl** GridInvList,
                             {
                                 newItem->stEffect[kh].cEffect = pItem->m_pItem->stEffect[kh].cEffect;
                                 newItem->stEffect[kh].cValue = pItem->m_pItem->stEffect[kh].cValue;
-                                newItem->stEffect[kh].sValue = pItem->m_pItem->stEffect[kh].sValue;
                             }
 
                             m_pGridNeedItem[i]->AddItem(new SGridControlItem(nullptr, newItem, 0.0f, 0.0f), 0, 0);
@@ -760,7 +756,6 @@ void CItemMix::ClickInvItem(SGridControlItem* pItem, SGridControl** GridInvList,
                     {
                         newItem->stEffect[kh].cEffect = pItem->m_pItem->stEffect[kh].cEffect;
                         newItem->stEffect[kh].cValue = pItem->m_pItem->stEffect[kh].cValue;
-                        newItem->stEffect[kh].sValue = pItem->m_pItem->stEffect[kh].sValue;
                     }
 
                     m_pGridNeedItem[i]->AddItem(new SGridControlItem(nullptr, newItem, 0.0f, 0.0f), 0, 0);
@@ -815,7 +810,6 @@ void CItemMix::ClickInvItem(SGridControlItem* pItem, SGridControl** GridInvList,
             {
                 newItem->stEffect[kh].cEffect = pItem->m_pItem->stEffect[kh].cEffect;
                 newItem->stEffect[kh].cValue = pItem->m_pItem->stEffect[kh].cValue;
-                newItem->stEffect[kh].sValue = pItem->m_pItem->stEffect[kh].sValue;
             }
 
             m_pGridNeedItem[i]->AddItem(new SGridControlItem(nullptr, newItem, 0.0f, 0.0f), 0, 0);

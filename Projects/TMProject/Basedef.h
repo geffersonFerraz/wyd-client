@@ -284,14 +284,14 @@ struct STRUCT_SCORE
 	unsigned short Special[4];
 };
 
-union STRUCT_BONUSEFFECT
+// The value is 16-bit: 4 bytes (byte 1 is padding). Effect and value together
+// used to be read as one short (the mount HP), see LegacyShort.
+struct STRUCT_BONUSEFFECT
 {
-	struct
-	{
-		unsigned char cEffect;
-		unsigned char cValue;
-	};
-	short sValue;
+	unsigned char cEffect;
+	unsigned short cValue;
+
+	short LegacyShort() const { return static_cast<short>(cEffect | (cValue << 8)); }
 };
 
 struct STRUCT_ITEM

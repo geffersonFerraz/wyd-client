@@ -526,7 +526,7 @@ int BASE_GetItemAbility(STRUCT_ITEM* item, char Type)
         switch (Type)
         {
         case EF_MOUNTHP:
-            return item->stEffect[0].sValue;
+            return item->stEffect[0].LegacyShort();
         case EF_MOUNTSANC:
             return item->stEffect[1].cEffect;
         case EF_MOUNTLIFE:
@@ -537,7 +537,7 @@ int BASE_GetItemAbility(STRUCT_ITEM* item, char Type)
             return item->stEffect[2].cValue;
         }
 
-        if (item->sIndex < 2362 || item->sIndex >= 2390 || item->stEffect[0].sValue <= 0)
+        if (item->sIndex < 2362 || item->sIndex >= 2390 || item->stEffect[0].LegacyShort() <= 0)
             return value;
 
         int lv = item->stEffect[1].cEffect;
@@ -1555,7 +1555,7 @@ int BASE_GetStaticItemAbility(STRUCT_ITEM* item, char Type)
     if (idx >= 2330 && idx < 2390)
     {
         if (Type == EF_MOUNTHP)
-            return item->stEffect[0].sValue;
+            return item->stEffect[0].LegacyShort();
 
         else if (Type == EF_MOUNTSANC)
             return item->stEffect[1].cEffect;
@@ -1569,7 +1569,7 @@ int BASE_GetStaticItemAbility(STRUCT_ITEM* item, char Type)
         else if (Type == EF_MOUNTKILL)
             return item->stEffect[2].cValue;
 
-        if (idx < 2362 || idx >= 2390 || item->stEffect[0].sValue <= 0)
+        if (idx < 2362 || idx >= 2390 || item->stEffect[0].LegacyShort() <= 0)
             return value;
 
         int lv = item->stEffect[1].cEffect;
@@ -2583,7 +2583,7 @@ int BASE_GetItemAbilityNosanc(STRUCT_ITEM* item, char type)
     if (itemId >= 2330 && itemId < 2390)
     {
         if (type == EF_MOUNTHP)
-            return item->stEffect[0].sValue;
+            return item->stEffect[0].LegacyShort();
 
         else if (type == EF_MOUNTSANC)
             return item->stEffect[1].cEffect;
@@ -2597,7 +2597,7 @@ int BASE_GetItemAbilityNosanc(STRUCT_ITEM* item, char type)
         else if (type == EF_MOUNTKILL)
             return item->stEffect[2].cValue;
 
-        if (itemId < 2362 || itemId >= 2390 || item->stEffect[0].sValue <= 0)
+        if (itemId < 2362 || itemId >= 2390 || item->stEffect[0].LegacyShort() <= 0)
             return value;
 
         int lv = item->stEffect[1].cEffect;
@@ -3382,7 +3382,7 @@ void BASE_ChangeOrAddEffectValue(STRUCT_ITEM* item, int effect, int value)
     {
         if (i.cEffect == effect)
         {
-            i.cValue = static_cast<unsigned char>(value);
+            i.cValue = static_cast<unsigned short>(value);
             return;
         }
     }
@@ -3393,7 +3393,7 @@ void BASE_ChangeOrAddEffectValue(STRUCT_ITEM* item, int effect, int value)
         if (i.cEffect == 0)
         {
             i.cEffect = static_cast<unsigned char>(effect);
-            i.cValue = static_cast<unsigned char>(value);
+            i.cValue = static_cast<unsigned short>(value);
             return;
         }
     }
