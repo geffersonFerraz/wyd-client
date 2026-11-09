@@ -146,29 +146,19 @@ char DS_SOUND_CHANNEL::CleanGraph()
 	if (FAILED(graph_builder->EnumFilters(&pFilterEnum)))
 		return 0;
 
-	int iFiltCount = 0;
-	int iPos = 0;
-
-	while (SUCCEEDED(pFilterEnum->Skip(1u)))
-		++iFiltCount;
-
-	IBaseFilter** ppFilters = (IBaseFilter**)_malloca(sizeof(IBaseFilter*) * iFiltCount);
-
-	HRESULT nextFilterHR = S_OK;
-	IBaseFilter** nextFilter = nullptr;
-	pFilterEnum->Reset();
-
-	while (pFilterEnum->Next(1, &(ppFilters[iPos++]), NULL) == S_OK)
-		;
+	// O enumerador fica invalido apos RemoveFilter: primeiro coleta os filtros.
+	std::vector<IBaseFilter*> filters;
+	IBaseFilter* pFilter = nullptr;
+	while (pFilterEnum->Next(1, &pFilter, nullptr) == S_OK)
+		filters.push_back(pFilter);
 
 	SAFE_RELEASE(pFilterEnum);
 
-	for (int iPos = 0; iPos < iFiltCount; ++iPos)
+	// Libera so a referencia obtida em Next; o grafo solta a dele em RemoveFilter.
+	for (IBaseFilter* pCurrent : filters)
 	{
-		graph_builder->RemoveFilter(ppFilters[iPos]);
-
-		while (ppFilters[iPos]->Release())
-			;
+		graph_builder->RemoveFilter(pCurrent);
+		pCurrent->Release();
 	}
 
 	return 1;

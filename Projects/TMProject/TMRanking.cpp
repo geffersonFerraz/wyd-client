@@ -53,7 +53,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 
 
 void TMFieldScene::RankingUpdate(int scene = 0) {

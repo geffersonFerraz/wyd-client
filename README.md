@@ -23,9 +23,24 @@ Nós não reindividicamos nenhum direito autoral do projeto. Este projeto foi cr
 Este código é uma descompilação fiel ao original, isto é, o código que aqui consta não remete ao que nós, desenvolvedores, faríamos. Como o projeto como um todo já foi completamente finalizado, tendo todas as funções necessárias para que o jogo seja jogável, o mesmo pode ser alterado como quiser.
 
 ## Compilação
-O projeto pode ser compilado apenas para Windows utilizando Visual Studio (o projeto está preparado para a versão 2019, mas o mesmo não há limitação quanto a versão mínima ou máxima). 
+No Windows, o projeto é compilado utilizando Visual Studio (o projeto está preparado para a versão 2019, mas o mesmo não há limitação quanto a versão mínima ou máxima). 
 
-O cliente é somente x64. Use `build.ps1`: o `WYD.exe`, a `D3DX9_43.dll` e a `D3DCompiler_43.dll` são gerados em `Build\x64\<Config>\` e os três precisam ficar juntos na pasta do jogo. Código novo não deve usar tamanhos de struct numéricos (`dwSize = 36`): use sempre `sizeof`, pois structs com ponteiros mudam de tamanho em x64.
+O cliente é somente x64. Use `build.ps1`: o `WYD.exe`, o launcher `JogarWYD.exe` (precisa do Go) e as DLLs do D3DX são gerados em `Build\x64\<Config>\`. Com `-Deploy`, eles são copiados para a pasta do jogo, `..\wyd-others\Release Cliente` por padrão ou a indicada em `-ReleaseDir`. Os jogadores abrem o `JogarWYD.exe`. Código novo não deve usar tamanhos de struct numéricos (`dwSize = 36`): use sempre `sizeof`, pois structs com ponteiros mudam de tamanho em x64.
+
+### Linux (Ubuntu 24.04 ou mais novo)
+
+O `WYD.exe` x64 é compilado com mingw-w64 e executado com Wine. A pasta do jogo padrão é `../wyd-others/Release LInux Cliente`; para usar outra, defina `WYD_RELEASE_DIR`.
+
+```sh
+./wyd-linux.sh deps    # instala as dependências (usa sudo)
+./wyd-linux.sh build   # gera o WYD.exe e copia para a pasta do jogo
+./wyd-linux.sh run     # abre o jogo
+./wyd-linux.sh bundle  # põe o Wine embutido e o lançador na pasta do jogo
+```
+
+Depois do `bundle`, a pasta do jogo funciona sozinha: basta abrir `WYD-Linux`. Ele valida o sistema, oferece instalar o que faltar, prepara o Wine na primeira execução, mostra a janela de configurações e grava o log em `~/.local/share/wyd-linux/wyd.log`. `./WYD-Linux --check` só mostra o resultado da validação, e `./WYD-Linux --jogar` abre o jogo sem a janela.
+
+O código é um só para os dois sistemas: o Linux compila com mingw-w64 e roda com Wine, e o Windows compila com Visual Studio. Um `.cpp` novo precisa entrar no `TMProject.vcxproj`; o CMake recusa o build se faltar, salvo os listados em `WYD_LINUX_ONLY`. Distribua a pasta em `.tar.xz`, pois `.zip` costuma perder a permissão de execução.
 
 ## Dependências
 

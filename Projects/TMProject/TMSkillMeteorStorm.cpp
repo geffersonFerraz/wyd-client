@@ -562,7 +562,7 @@ int TMSkillMeteorStorm::FrameMove(unsigned int dwServerTime)
 		pMesh->m_pVB->GetDesc(&vDesc);
 		pMesh->m_pVB->Lock(0, 0, (void**)&pVertex, 0);
 
-		int nCount = vDesc.Size / sizeof RDLVERTEX;
+		int nCount = vDesc.Size / sizeof(RDLVERTEX);
 
 		for (int i = 0; i < nCount; ++i)
 			pVertex[i].diffuse = -1;

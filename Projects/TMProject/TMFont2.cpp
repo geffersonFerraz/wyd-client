@@ -129,7 +129,15 @@ int TMFont2::SetText(const char* szString, unsigned int dwColor, int bCheckZero)
 		for (int nLine = 0; nLine < m_nLineNumber; ++nLine)
 		{
 			char szTemp[45]{};
+#ifdef __MINGW32__
+			// O FillRect acima nao limpa nada (pincel nulo). Sem limpar, a medicao abaixo
+			// enxerga restos de textos anteriores.
+			GdiFlush();
+			memset(&g_pDevice->m_pBitmapBits[nLine * (RenderDevice::m_nFontSize + 1) * RenderDevice::m_nFontTextureSize], 0,
+				(RenderDevice::m_nFontSize + 1) * RenderDevice::m_nFontTextureSize * sizeof(unsigned int));
+#endif
 			memset(szTemp, ' ', sizeof(szTemp));
+			szTemp[sizeof(szTemp) - 1] = 0;
 
 			TextOut(g_pDevice->m_hDC, 0, nLine * (RenderDevice::m_nFontSize + 1), szTemp, strlen(szTemp));
 
@@ -172,6 +180,35 @@ int TMFont2::SetText(const char* szString, unsigned int dwColor, int bCheckZero)
 				strlen(m_szStringArray[nLine]), &size);
 
 			m_szStringSize[nLine] = static_cast<short>(size.cx);
+#ifdef __MINGW32__
+			// No Wine, GetTextExtentPoint32 mede mais do que o TextOut desenha e o bloco
+			// seguinte do texto ficava afastado. Usa a largura realmente desenhada.
+			GdiFlush();
+			const int nCellTop = nLine * (RenderDevice::m_nFontSize + 1);
+			int nDrawnRight = -1;
+			for (int nY = nCellTop; nY < nCellTop + RenderDevice::m_nFontSize + 1; ++nY)
+			{
+				for (int nX = RenderDevice::m_nFontTextureSize - 1; nX > nDrawnRight; --nX)
+				{
+					if (g_pDevice->m_pBitmapBits[nX + nY * RenderDevice::m_nFontTextureSize] & 0xFF)
+					{
+						nDrawnRight = nX;
+						break;
+					}
+				}
+			}
+
+			if (nDrawnRight >= 0)
+			{
+				int nDrawnWidth = nDrawnRight + 1;
+				SIZE spaceSize;
+				GetTextExtentPoint32(g_pDevice->m_hDC, " ", 1, &spaceSize);
+				for (int nC = (int)strlen(m_szStringArray[nLine]) - 1; nC >= 0 && m_szStringArray[nLine][nC] == ' '; --nC)
+					nDrawnWidth += spaceSize.cx;
+
+				m_szStringSize[nLine] = static_cast<short>(nDrawnWidth);
+			}
+#endif
 		}
 	}
 

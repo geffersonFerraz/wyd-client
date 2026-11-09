@@ -54,7 +54,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 #include "TMDroplistAndFilter.h"
   
 TMSlotMove::TMSlotMove(float inX, float inY, float inWidth, float inHeight, unsigned int MaxSlot)

@@ -5,7 +5,7 @@
 //-----------------------------------------------------------------------------
 #define STRICT
 #include <windows.h>
-#include <D3D9.h>
+#include <d3d9.h>
 #include "DXUtil.h"
 #include "D3DEnumeration.h"
 

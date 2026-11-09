@@ -199,9 +199,9 @@ int TMSelectServerScene::InitializeScene()
 	   
 	g_pObjectManager->m_cSelectShortSkill = 0;
 
-	memset(&g_pObjectManager->m_stSelCharData, 0, sizeof STRUCT_SELCHAR);
-	memset(g_pObjectManager->m_stItemCargo, 0, sizeof STRUCT_ITEM * MAX_CARGO);
-	memset(&g_pObjectManager->m_stMobData, 0, sizeof STRUCT_MOB);
+	memset(&g_pObjectManager->m_stSelCharData, 0, sizeof(STRUCT_SELCHAR));
+	memset(g_pObjectManager->m_stItemCargo, 0, sizeof(STRUCT_ITEM) * MAX_CARGO);
+	memset(&g_pObjectManager->m_stMobData, 0, sizeof(STRUCT_MOB));
 
 	for (int i = 0; i < 4; ++i)
 		g_pObjectManager->m_stMobData.ShortSkill[i] = -1;
@@ -520,9 +520,9 @@ int TMSelectServerScene::InitializeScene()
 //	g_pObjectManager->m_cCharacterSlot = -1;
 //	g_pObjectManager->m_cSelectShortSkill = 0;
 //
-//	memset(&g_pObjectManager->m_stSelCharData, 0, sizeof STRUCT_SELCHAR);
-//	memset(g_pObjectManager->m_stItemCargo, 0, sizeof STRUCT_ITEM * MAX_CARGO);
-//	memset(&g_pObjectManager->m_stMobData, 0, sizeof STRUCT_MOB);
+//	memset(&g_pObjectManager->m_stSelCharData, 0, sizeof(STRUCT_SELCHAR));
+//	memset(g_pObjectManager->m_stItemCargo, 0, sizeof(STRUCT_ITEM) * MAX_CARGO);
+//	memset(&g_pObjectManager->m_stMobData, 0, sizeof(STRUCT_MOB));
 //
 //	for (int i = 0; i < 4; ++i)
 //		g_pObjectManager->m_stMobData.ShortSkill[i] = -1;
@@ -762,9 +762,13 @@ int TMSelectServerScene::OnControlEvent(unsigned int idwControlID, unsigned int 
 
 	SListBoxServerItem* pServerItem[11]{ nullptr };
 
-	int nIndexN = g_nServerCountList[nMaxGroupN - idwEvent - 1] - 1;
+	// idwEvent e unsigned: em x64 o indice negativo vira ~4 bilhoes e estoura a leitura.
+	int nGroupRow = nMaxGroupN - static_cast<int>(idwEvent) - 1;
+	int nIndexN = (nGroupRow >= 0 && nGroupRow < 11) ? g_nServerCountList[nGroupRow] - 1 : -1;
 	if (idwControlID == L_SELECT_SERVERG && idwEvent < 11 && s_nGroupRowIndex[idwEvent] >= 0)
 		nIndexN = s_nGroupRowIndex[idwEvent];
+	if (idwControlID == L_SELECT_SERVERG && nIndexN < 0)
+		return 1;
 	m_pReconnectPanel->OnControlEvent(idwControlID, idwEvent);
 	switch (idwControlID)
 	{
@@ -1167,13 +1171,13 @@ int TMSelectServerScene::OnControlEvent(unsigned int idwControlID, unsigned int 
 		for (int i = 0; i < nLen1; ++i)
 			g_pObjectManager->m_szAccountPass[i] += i;
 
-		g_pSocketManager->SendOneMessage(reinterpret_cast<char*>(&stAccountLogin), sizeof MSG_AccountLogin);
+		g_pSocketManager->SendOneMessage(reinterpret_cast<char*>(&stAccountLogin), sizeof(MSG_AccountLogin));
 
 		MSG_STANDARDPARM bb{};
 		bb.Header.ID = g_pObjectManager->m_dwCharID;
 		bb.Header.Type = 0x99F;
 		bb.Parm = pReconectData.ReconectStatus;
-		g_pSocketManager->SendOneMessage(reinterpret_cast<char*>(&bb), sizeof MSG_STANDARDPARM);
+		g_pSocketManager->SendOneMessage(reinterpret_cast<char*>(&bb), sizeof(MSG_STANDARDPARM));
 
 		LastSendMsgTime = g_pTimerManager->GetServerTime();
 	}
@@ -1346,7 +1350,7 @@ int TMSelectServerScene::OnPacketEvent(unsigned int dwCode, char* buf)
 		g_pTimerManager->SetServerTime(packet->Tick);
 
 		auto selChar = reinterpret_cast<MSG_CNFAccountLogin*>(buf);
-		memcpy(&g_pObjectManager->m_stSelCharData, &selChar->SelChar, sizeof STRUCT_SELCHAR);
+		memcpy(&g_pObjectManager->m_stSelCharData, &selChar->SelChar, sizeof(STRUCT_SELCHAR));
 		memcpy(g_pObjectManager->m_stItemCargo, selChar->Cargo, sizeof(STRUCT_ITEM) * MAX_CARGO);
 
 		g_pObjectManager->m_nCargoCoin = selChar->Coin;

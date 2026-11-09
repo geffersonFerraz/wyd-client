@@ -55,7 +55,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 
 int TMFieldScene::m_bAutotrade = 0;
 int TMFieldScene::mHideLeilao = 0;
@@ -547,6 +547,7 @@ int TMFieldScene::LeilaoButtonAction(int idwControlID)
 		return 1;
 	}
 	/*BOTOES DO SISTEMA DE LEILÃO*/
+	return 0;
 }
 //ok
 int TMFieldScene::OnKeyVisibleLeilao(char iCharCode, int lParam)

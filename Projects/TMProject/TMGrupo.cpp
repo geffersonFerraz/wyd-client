@@ -55,7 +55,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 
 
 int TMFieldScene::m_bAutoGrupo = 0;
@@ -68,8 +68,8 @@ int TMFieldScene::InitializeListaGrupo()
 {  
 	m_pListaGrupo = (SPanel*)m_pControlContainer->FindControl(19930);
 	m_pListaGrupo->SetVisible(0);
-	memset(LeaderName, 0, sizeof LeaderName);
-	memset(LeaderPass, 0, sizeof LeaderPass);
+	memset(LeaderName, 0, sizeof(LeaderName));
+	memset(LeaderPass, 0, sizeof(LeaderPass));
 
 	/*m_pAutoTradeValuePanel = (SPanel*)m_pControlContainer->FindControl(565885);
 	if (m_pAutoTradeValuePanel)
@@ -133,7 +133,7 @@ int TMFieldScene::SendListaGrupoSair(int itemType, int alvo)
 }
 int TMFieldScene::SendBuscarListaGrupo(int itemType, char* ItemName)
 {
-	memset(&_HudControl.gListgrup, 0, sizeof MSG_ListaGrupo);
+	memset(&_HudControl.gListgrup, 0, sizeof(MSG_ListaGrupo));
 
 	auto Lideres = (SListBox*)m_pControlContainer->FindControl(19931);
 	if (Lideres)
@@ -170,7 +170,7 @@ int TMFieldScene::ListaGrupoButtonAction(int idwControlID, int idwEvent)
 	}
 	if (idwControlID == 19933)//lupa
 	{
-		memset(&_HudControl.gListgrup, 0, sizeof MSG_ListaGrupo);
+		memset(&_HudControl.gListgrup, 0, sizeof(MSG_ListaGrupo));
 
 		auto Lideres = (SListBox*)m_pControlContainer->FindControl(19931);
 		if (Lideres)
@@ -314,6 +314,7 @@ int TMFieldScene::ListaGrupoButtonAction(int idwControlID, int idwEvent)
 		return 1;
 	}
 	
+	return 0;
 }
 //ok
 int TMFieldScene::SendListaGrupo()
@@ -358,7 +359,7 @@ int TMFieldScene::OnReceivingGrupo(MSG_STANDARD* pStd) {
 
 
 	auto pack = (MSG_ListaGrupo*)pStd;
-	memcpy(&_HudControl.gListgrup, pack, sizeof MSG_ListaGrupo);
+	memcpy(&_HudControl.gListgrup, pack, sizeof(MSG_ListaGrupo));
 	if (pack == nullptr) {
 		std::cout << "[OnReceivingGrupo] Falha ao interpretar a mensagem de grupo." << std::endl;
 		return 0;
@@ -491,7 +492,7 @@ int TMFieldScene::OnKeyVisibleListaGrupo(char iCharCode, int lParam)
 
 	if (m_pListaGrupo->m_bVisible)
 	{
-		memset(&_HudControl.gListgrup, 0, sizeof MSG_ListaGrupo);
+		memset(&_HudControl.gListgrup, 0, sizeof(MSG_ListaGrupo));
 
 		auto Lideres = (SListBox*)m_pControlContainer->FindControl(19931);
 		if (Lideres)

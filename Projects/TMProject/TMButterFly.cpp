@@ -23,8 +23,8 @@ TMButterFly::TMButterFly(int nType, int nBD, TMObject* pOwner)
 
 	m_pOwner = pOwner;
 
-	memset(&m_stLookInfo, 0, sizeof LOOK_INFO);
-	memset(&m_stSancInfo.Sanc0, 0, sizeof SANC_INFO);
+	memset(&m_stLookInfo, 0, sizeof(LOOK_INFO));
+	memset(&m_stSancInfo.Sanc0, 0, sizeof(SANC_INFO));
 
 	if (m_nBD)
 	{

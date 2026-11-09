@@ -54,7 +54,7 @@
 #include "TMSkillExplosion2.h"
 #include "TMEffectDust.h"
 #include "TMGate.h"
-#include <WinInet.h>
+#include <wininet.h>
 #include <regex>
 #include <windows.h>
 #include <iostream>

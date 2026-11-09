@@ -1447,7 +1447,7 @@ int TMSelectCharScene::OnPacketEvent(unsigned int dwCode, char* buf)
 		m_pMessagePanel->SetVisible(0, 1);
 		MSG_CNFNewCharacter* pNewCharacter = reinterpret_cast<MSG_CNFNewCharacter*>(pStd);
 
-		memcpy(&g_pObjectManager->m_stSelCharData, &pNewCharacter->SelChar, sizeof STRUCT_SELCHAR);
+		memcpy(&g_pObjectManager->m_stSelCharData, &pNewCharacter->SelChar, sizeof(STRUCT_SELCHAR));
 
 		ReloadCharList(RELOAD_CHARLIST_TYPE::CREATE_CHARACTER);
 	}
@@ -1638,7 +1638,7 @@ int TMSelectCharScene::FrameMove(unsigned int dwServerTime)
 		stStandard.ID = 0;
 		stStandard.Type = MSG_Ping_Opcode;
 
-		g_pSocketManager->SendOneMessage((char*)&stStandard, sizeof MSG_STANDARD);
+		g_pSocketManager->SendOneMessage((char*)&stStandard, sizeof(MSG_STANDARD));
 	}
 
 	if (m_bCriticalError == 1)

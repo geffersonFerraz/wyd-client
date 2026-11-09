@@ -368,7 +368,7 @@ int TMSkillMagicShield::FrameMove(unsigned int dwServerTime)
 			pMesh->m_pVB->GetDesc(&vDesc);
 			pMesh->m_pVB->Lock(0, 0, (void**)&pVertex, 0);
 
-			auto nCount = vDesc.Size / sizeof RDLVERTEX;
+			auto nCount = vDesc.Size / sizeof(RDLVERTEX);
 
 			for (size_t i = 0; i < nCount; ++i)
 			{
