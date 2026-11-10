@@ -28,6 +28,8 @@ public:
 
 public:
     TMVector3 m_vecPosition;
+    TMVector3 m_vecEnd;
+    float m_fElapsed;
     int m_nType;
     unsigned int m_dwColor;
     RDLVERTEX m_vertex[4];
