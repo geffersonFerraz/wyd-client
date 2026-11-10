@@ -257,7 +257,7 @@ int EventTranslator::CameraEventData()
         if (g_pCurrentScene->m_pMyHuman->m_cMount == 1)
             fClose = 2.5f;
 
-        fClose = (float)((float)g_pCurrentScene->m_pMyHuman->m_stScore.Con * 0.00019f) + fClose;
+        fClose = (float)(g_pCurrentScene->m_pMyHuman->GetCameraCon() * 0.00019f) + fClose;
     }
 
     if (g_pCurrentScene == nullptr)

@@ -1062,16 +1062,16 @@ int TMSelectCharScene::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, i
 		pExpC->m_cComma = 1;
 		pExpC->SetText(szValue, 0);
 
-		sprintf_s(szValue, "%d", g_pObjectManager->m_stSelCharData.Score[i].Str);
+		sprintf_s(szValue, "%lld", g_pObjectManager->m_stSelCharData.Score[i].Str);
 		pStr->SetText(szValue, 0);
 
-		sprintf_s(szValue, "%d", g_pObjectManager->m_stSelCharData.Score[i].Int);
+		sprintf_s(szValue, "%lld", g_pObjectManager->m_stSelCharData.Score[i].Int);
 		pInt->SetText(szValue, 0);
 
-		sprintf_s(szValue, "%d", g_pObjectManager->m_stSelCharData.Score[i].Dex);
+		sprintf_s(szValue, "%lld", g_pObjectManager->m_stSelCharData.Score[i].Dex);
 		pDex->SetText(szValue, 0);
 
-		sprintf_s(szValue, "%d", g_pObjectManager->m_stSelCharData.Score[i].Con);
+		sprintf_s(szValue, "%lld", g_pObjectManager->m_stSelCharData.Score[i].Con);
 		pCon->SetText(szValue, 0);
 
 		sprintf_s(szValue, "%d", g_pObjectManager->m_stSelCharData.Score[i].Special[0]);

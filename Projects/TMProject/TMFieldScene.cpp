@@ -18273,16 +18273,16 @@ void TMFieldScene::UpdateScoreUI(unsigned int unFlag)
 			m_pCIClass2->SetText((char*)" ", 0);
 		}
 
-		sprintf(szStr, "%d", pMobData->CurrentScore.Str);
+		sprintf(szStr, "%lld", pMobData->CurrentScore.Str);
 		if (m_pCIStr)
 			m_pCIStr->SetText(szStr, 0);
-		sprintf(szStr, "%d", pMobData->CurrentScore.Int);
+		sprintf(szStr, "%lld", pMobData->CurrentScore.Int);
 		if (m_pCIInt)
 			m_pCIInt->SetText(szStr, 0);
-		sprintf(szStr, "%d", pMobData->CurrentScore.Dex);
+		sprintf(szStr, "%lld", pMobData->CurrentScore.Dex);
 		if (m_pCIDex)
 			m_pCIDex->SetText(szStr, 0);
-		sprintf(szStr, "%d", pMobData->CurrentScore.Con);
+		sprintf(szStr, "%lld", pMobData->CurrentScore.Con);
 		if (m_pCICon)
 			m_pCICon->SetText(szStr, 0);
 

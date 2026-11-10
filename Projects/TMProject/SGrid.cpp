@@ -3587,7 +3587,7 @@ int SGridControl::MouseOver(int nCellX, int nCellY, int bPtInRect)
 			int reqScore = BASE_GetItemAbility(pItem->m_pItem, dwEFParam[l]);
 			if (reqScore > 0)
 			{
-				if (reqScore <= *((unsigned short*)&g_pObjectManager->m_stMobData.CurrentScore.Dex + l))
+				if (reqScore <= g_pObjectManager->m_stMobData.CurrentScore.Special[l - 2])
 					dwColor = 0xFFFFFFFF;
 				else
 					dwColor = 0xFFFF0000;

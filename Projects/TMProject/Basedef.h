@@ -277,10 +277,10 @@ struct STRUCT_SCORE
 	long long MaxMp;
 	long long Hp;
 	long long Mp;
-	short Str;
-	short Int;
-	short Dex;
-	short Con;
+	long long Str;
+	long long Int;
+	long long Dex;
+	long long Con;
 	unsigned short Special[4];
 };
 
@@ -1101,10 +1101,10 @@ struct MSG_CAPSULEINFO
 	unsigned int CIndex;
 	short Class;
 	short Level;
-	short sStr;
-	short sInt;
-	short sDex;
-	short sCon;
+	int sStr;
+	int sInt;
+	int sDex;
+	int sCon;
 	short Mastery[4];
 	short skill[9];
 	short Quest;
