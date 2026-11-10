@@ -220,7 +220,7 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 				nCellY = -1;
 			}
 		}
-		else if (nSlot >= 0 && (IsClassicInv() ? CarryPage(nSlot) : nSlot / ClassicPageSize()) == ClassicPage())
+		else if (nSlot >= 0 && nSlot < ClassicSlotCount() && (IsClassicInv() ? CarryPage(nSlot) : nSlot / ClassicPageSize()) == ClassicPage())
 		{
 			int nInPage = nSlot - ClassicPage() * ClassicPageSize();
 			nCellX = nInPage % 5;
@@ -6382,7 +6382,7 @@ SGridControlItem* SGridControl::ClassicItemAt(bool bCargo, int nViewX, int nView
 bool SGridControl::ClassicCanPlace(bool bCargo, SGridControlItem* pMoving, int nSlot)
 {
 	int nRows = bCargo ? 14 : 7;
-	if (!pMoving || !pMoving->m_pItem || nSlot < 0 || nSlot >= nRows * 9)
+	if (!pMoving || !pMoving->m_pItem || nSlot < 0 || nSlot >= (bCargo ? nRows * 9 : 60))
 		return false;
 
 	int nWidth = 1;
@@ -6501,7 +6501,7 @@ void SGridControl::LayoutClassicShop()
 bool SGridControl::GetClassicView(int nCellX, int nCellY, int& nView) const
 {
 	nView = ClassicPage() * ClassicPageSize() + nCellY * 5 + nCellX;
-	return nView >= 0 && nView < ClassicColumns() * ClassicRows();
+	return nView >= 0 && nView < ClassicSlotCount();
 }
 
 int SGridControl::GetIndexFromCoordinates(int x, int y)

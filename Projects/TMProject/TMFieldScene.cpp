@@ -812,7 +812,14 @@ int TMFieldScene::InitializeScene()
 		m_pMenuDaily->SetPos(RenderDevice::m_fWidthRatio * 150.0f,
 			RenderDevice::m_fHeightRatio * 50.0f);
 	}
-
+	// Botao de resgate da Recompensa Diaria: e de textura, entao nao nasce com fonte e ficava sem texto.
+	auto pDailyButton = (SButton*)m_pControlContainer->FindControl(15716);
+	if (pDailyButton && pDailyButton->m_eCtrlType == CONTROL_TYPE::CTRL_TYPE_BUTTON)
+	{
+		if (!pDailyButton->m_GCPanel.pFont)
+			pDailyButton->m_GCPanel.pFont = new TMFont2();
+		pDailyButton->SetText((char*)"Resgatar");
+	}
 
 
 

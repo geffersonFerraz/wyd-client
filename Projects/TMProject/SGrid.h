@@ -98,6 +98,8 @@ public:
     int ClassicColumns() const { return 9; }
     int ClassicRows() const { return IsClassicInv() ? 7 : (IsClassicCargo() ? 14 : 13); }
     int ClassicPageSize() const { return IsClassicInv() ? 15 : 40; }
+    // Inventario: 9x7 = 63 celulas, mas so existem 60 slots (0-59); as 3 ultimas celulas nao recebem item.
+    int ClassicSlotCount() const { return IsClassicInv() ? 60 : ClassicColumns() * ClassicRows(); }
     int ClassicPage() const { return IsClassicInv() ? (int)m_dwControlID - 67072 : (IsClassicCargo() ? (int)m_dwControlID - 67328 : 0); }
     bool GetClassicView(int nCellX, int nCellY, int& nView) const;
     void LayoutClassicShop();
