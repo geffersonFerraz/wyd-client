@@ -2652,6 +2652,17 @@ int TMFieldScene::InitializeScene()
 // -1 quando a lista nao a tem.
 static int s_nServerMoveExitRow = -1;
 
+// Acoes dos botoes do inventario (servidor: opcode 0xF40, Parm 1 destruir, 2/3 ordenar, 4 largar).
+static void SendInvAction(int nAction)
+{
+	MSG_STANDARDPARM stParm{};
+	stParm.Header.ID = g_pObjectManager->m_dwCharID;
+	stParm.Header.Type = 0xF40;
+	stParm.Header.Size = sizeof(stParm);
+	stParm.Parm = nAction;
+	SendOneMessage((char*)&stParm, sizeof(stParm));
+}
+
 int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEvent)
 {
 
@@ -2683,6 +2694,29 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 	m_pReconnectPanel->OnControlEvent(idwControlID, idwEvent);
 	LeilaoButtonAction(idwControlID);
 	ListaGrupoButtonAction(idwControlID, idwEvent);
+
+	// Botoes do inventario (TMScene.cpp AddClassicInvButtons).
+	if (idwControlID == 9100201)
+	{
+		m_pMessageBox->SetMessage((char*)"Destruir TODOS os itens do inventario?", 9100201, (char*)"Esta acao nao pode ser desfeita.");
+		m_pMessageBox->SetVisible(1);
+		return 1;
+	}
+	if (idwControlID == 9100202)
+	{
+		static bool s_bSortDesc = false;
+		SendInvAction(s_bSortDesc ? 3 : 2);
+		s_bSortDesc = !s_bSortDesc;
+		if (auto pButton = (SButton*)m_pControlContainer->FindControl(9100202))
+			pButton->SetText((char*)(s_bSortDesc ? "Z-A" : "A-Z"));
+		return 1;
+	}
+	if (idwControlID == 9100203)
+	{
+		m_pMessageBox->SetMessage((char*)"Largar TODOS os itens no chao?", 9100203, (char*)"Os itens ficam reservados para voce por 10 minutos.");
+		m_pMessageBox->SetVisible(1);
+		return 1;
+	}
 
 	if (idwControlID == TMB_IME_BUTTON)
 	{
@@ -21795,6 +21829,13 @@ int TMFieldScene::OnMsgBoxEvent(unsigned int idwControlID, unsigned int idwEvent
 	}break;
 
 
+
+	case 9100201: // destruir tudo
+		SendInvAction(1);
+		break;
+	case 9100203: // largar tudo
+		SendInvAction(4);
+		break;
 
 	case 601:
 	{

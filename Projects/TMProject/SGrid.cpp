@@ -193,6 +193,12 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 				nCellX = pHit->m_nCellIndexX;
 				nCellY = pHit->m_nCellIndexY;
 			}
+			else if (nView >= 0 && g_pCursor->m_pAttachedItem)
+			{
+				// Arrastando um item: qualquer ponto da area da loja vende (a celula nao importa).
+				nCellX = 0;
+				nCellY = 0;
+			}
 			else
 			{
 				bPtInRect = 0;
@@ -1654,6 +1660,12 @@ void SGridControl::BuyItem(int nCellX, int nCellY)
 			if (page < 0 || page > 45)
 				page = 0;
 
+			// O servidor poe o item na primeira celula livre da grade 9x7; aqui so se
+			// confere se ha espaco (as paginas internas de 5x3 nao seguem a ordem da grade).
+			int nFreeSlot = SGridControl::ClassicFirstFit(false, pItem);
+			vecGrid.x = nFreeSlot >= 0 ? nFreeSlot % 9 : -1;
+			vecGrid.y = nFreeSlot >= 0 ? nFreeSlot / 9 : -1;
+
 			MSG_Buy stBuy{};
 			stBuy.Header.ID = g_pCurrentScene->m_pMyHuman->m_dwID;
 			stBuy.Header.Type = MSG_Buy_Opcode;
@@ -1663,7 +1675,7 @@ void SGridControl::BuyItem(int nCellX, int nCellY)
 				stBuy.TargetID = g_pCurrentScene->m_pMyHuman->m_dwID;
 
 			stBuy.TargetCarryPos = SourPos;
-			stBuy.MyCarryPos = page + vecGrid.x + 5 * vecGrid.y;
+			stBuy.MyCarryPos = nFreeSlot;
 
 			if (vecGrid.x > -1 && vecGrid.y > -1)
 			{
@@ -2375,7 +2387,12 @@ int SGridControl::SellItem(int nCellX, int nCellY, unsigned int dwFlags, unsigne
 
 			short sDestPos = CheckPos(SGridControl::m_pSellItem->m_pGridControl->m_eItemType);
 			if (sDestPos == -1)
+			{
 				sDestPos = SGridControl::m_pSellItem->m_nCellIndexX + 5 * SGridControl::m_pSellItem->m_nCellIndexY;
+				int nPage = (int)SGridControl::m_pSellItem->m_pGridControl->m_dwControlID - 67072;
+				if (nPage > 0 && nPage < 4)
+					sDestPos += 15 * nPage;
+			}
 
 			MSG_Sell stSell{};
 			stSell.Header.ID = g_pCurrentScene->m_pMyHuman->m_dwID;
@@ -2728,7 +2745,12 @@ int SGridControl::SellItem2()
 				SGridControl::m_pSellItem->m_pGridControl->m_eGridType);
 			short sDestPos = CheckPos(SGridControl::m_pSellItem->m_pGridControl->m_eItemType);
 			if (sDestPos == -1)
+			{
 				sDestPos = SGridControl::m_pSellItem->m_nCellIndexX + 5 * SGridControl::m_pSellItem->m_nCellIndexY;
+				int nPage = (int)SGridControl::m_pSellItem->m_pGridControl->m_dwControlID - 67072;
+				if (nPage > 0 && nPage < 4)
+					sDestPos += 15 * nPage;
+			}
 
 			MSG_Sell stSell{};
 			stSell.Header.ID = g_pCurrentScene->m_pMyHuman->m_dwID;
