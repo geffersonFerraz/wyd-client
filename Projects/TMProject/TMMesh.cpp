@@ -282,14 +282,14 @@ int TMMesh::RenderPick(float fX, float fY, float fZ, float fAngle, float fAngle2
 
 int TMMesh::RenderForUI(int nX, int nY, float fAngle, float fScale, DWORD dwColor, int nMultiTex, int nTexOffset, short sLegend)
 {
-	float fWidthRatio = 6.3f;
-	if (((float)g_pDevice->m_viewport.Width / (float)g_pDevice->m_viewport.Height) < 1.26f)
-		fWidthRatio = 6.26f;
+	// Area visivel no plano z=0 pela projecao de RenderDevice::SetMatrixForUI
+	// (fovY 0.1, aspecto * 0.94, camera a 50 unidades), valida em qualquer proporcao.
+	float fVisibleHeight = 100.0f * tanf(0.05f);
+	float fVisibleWidth = fVisibleHeight
+		* ((float)g_pDevice->m_d3dsdBackBuffer.Width / (float)g_pDevice->m_d3dsdBackBuffer.Height) * 0.94f;
 
-	float fX = (float)nX / (float)((float)g_pDevice->m_viewport.Width / fWidthRatio);
-	float fY = (float)nY / (float)((float)g_pDevice->m_viewport.Height / 4.96f) - 2.48f;
-
-	fX = fX - (float)(fWidthRatio / 2.0f);
+	float fX = ((float)nX / (float)g_pDevice->m_viewport.Width) * fVisibleWidth - (fVisibleWidth / 2.0f);
+	float fY = ((float)nY / (float)g_pDevice->m_viewport.Height) * fVisibleHeight - (fVisibleHeight / 2.0f);
 	float fYaw = atan2f(fX, 50.0f);
 	float fPitch = atan2f(fY, 50.0f);
 

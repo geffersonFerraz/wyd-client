@@ -5975,6 +5975,36 @@ SGridControlItem::SGridControlItem(SGridControl* pParent, STRUCT_ITEM* pItem, fl
 		}
 		if (pItem->sIndex >= 2330 && pItem->sIndex < 2390)
 			m_GCObj.sLegend = 0;
+
+		// Visual 7.502: item com modelo valido aparece em 3D no slot; sem modelo, fica o icone.
+		// Em armaduras nIndexMesh e o numero do conjunto: BASE_GetMeshIndex resolve a peca (ch*.msa).
+		int n3DIndex = pItem->sIndex < 6500 ? BASE_GetMeshIndex(pItem->sIndex) : -1;
+		if (n3DIndex > 0 && (n3DIndex < 737 || n3DIndex > 739)
+			&& g_pMeshManager->GetCommonMesh(n3DIndex, 0, 180000))
+		{
+			// Mesma variacao de textura usada pelo item no chao (TMItem).
+			int nTexture = g_pItemList[pItem->sIndex].nIndexTexture;
+			if (g_pItemList[pItem->sIndex].nIndexMesh == 27)
+			{
+				if (nTexture >= 6 && nTexture <= 9)
+					nTexture -= 1;
+				else if (nTexture >= 11 && nTexture <= 17)
+					nTexture -= 2;
+				else if (nTexture == 19)
+					nTexture -= 3;
+				else if (nTexture == 21 || nTexture == 22)
+					nTexture -= 4;
+			}
+
+			m_GCObj.eRenderType = RENDERCTRLTYPE::RENDER_3DOBJ;
+			m_GCObj.n3DObjIndex = n3DIndex;
+			m_GCObj.nTextureSetIndex = nTexture;
+			m_GCObj.nTextureIndex = m_GCObj.sSanc;
+
+			// O renderizador 3D nao desenha strString: quantidade e refinacao vao no m_GCText.
+			strcpy_s(m_GCText.strString, m_GCObj.strString);
+			m_GCObj.strString[0] = 0;
+		}
 	}
 }
 
@@ -6043,6 +6073,70 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 		m_GCObj.nHeight = m_nHeight;
 		m_GCObj.nLayer = inParentLayer;
  
+		if (m_GCObj.eRenderType == RENDERCTRLTYPE::RENDER_3DOBJ)
+		{
+			float fCellWidth = m_nWidth;
+			float fCellHeight = m_nHeight;
+			int nCellsX = m_nCellWidth;
+			int nCellsY = m_nCellHeight;
+
+			if (m_pGridControl && m_pGridControl->m_nColumnGridCount > 0 && m_pGridControl->m_nRowGridCount > 0)
+			{
+				int nColumns = m_pGridControl->m_nColumnGridCount;
+				int nRows = m_pGridControl->m_nRowGridCount;
+				fCellWidth = m_pGridControl->m_nWidth / (float)nColumns;
+				fCellHeight = m_pGridControl->m_nHeight / (float)nRows;
+				nCellsX = nCellsX < nColumns ? nCellsX : nColumns;
+				nCellsY = nCellsY < nRows ? nCellsY : nRows;
+			}
+
+			// Ajusta pelo tamanho real do modelo; ao girar, X e Y se alternam na tela.
+			TMMesh* pMesh = g_pMeshManager->GetCommonMesh(m_GCObj.n3DObjIndex, 0, 180000);
+			if (pMesh)
+			{
+				float fHalfX = (pMesh->m_fMaxX - pMesh->m_fMinX) * 0.5f;
+				float fHalfY = (pMesh->m_fMaxY - pMesh->m_fMinY) * 0.5f;
+				float fHalfZ = (pMesh->m_fMaxZ - pMesh->m_fMinZ) * 0.5f;
+				float fHalf = fHalfX > fHalfY ? fHalfX : fHalfY;
+				fHalf = fHalf > fHalfZ ? fHalf : fHalfZ;
+
+				float fSlotX = fCellWidth * (float)nCellsX;
+				float fSlotY = fCellHeight * (float)nCellsY;
+				float fSlot = fSlotX < fSlotY ? fSlotX : fSlotY;
+
+				// 0.52 e 0.9 vem de RenderForUI/RenderGeomControl; 5.004 e a altura visivel da UI.
+				float fPixelsPerUnit = 0.52f * BASE_ScreenResize(0.9f / RenderDevice::m_fWidthRatio)
+					* ((float)g_pDevice->m_viewport.Height / 5.004f);
+
+				if (fHalf > 0.0001f && fPixelsPerUnit > 0.0001f)
+				{
+					float fFit = (0.42f * fSlot) / (fHalf * fPixelsPerUnit);
+					m_GCObj.fScale = fFit > 1.6f ? 1.6f : fFit;
+				}
+			}
+
+			float fLeft = m_GCObj.nPosX;
+			float fTop = m_GCObj.nPosY;
+
+			// RenderForUI recebe o centro do modelo.
+			m_GCObj.nPosX = fLeft + (fCellWidth * (float)nCellsX) / 2.0f;
+			m_GCObj.nPosY = fTop + (fCellHeight * (float)nCellsY) / 2.0f;
+			m_GCObj.fAngle = 0.0f;
+			if (m_bOver == 1)
+				m_GCObj.fAngle = ((float)(g_pTimerManager->GetServerTime() % 3000) * 6.28f) / 3000.0f;
+
+			AddRenderControlItem(pDrawList, &m_GCObj, inParentLayer);
+
+			int nLength = (int)strlen(m_GCText.strString);
+			if (nLength > 0)
+			{
+				m_GCText.nPosX = fLeft + m_nWidth - (float)(7 * nLength);
+				m_GCText.nPosY = fTop + m_nHeight - 12.0f;
+				AddRenderControlItem(pDrawList, &m_GCText, inParentLayer);
+			}
+			return;
+		}
+
 		AddRenderControlItem(pDrawList, &m_GCObj, inParentLayer);
 	}
 }
