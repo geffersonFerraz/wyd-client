@@ -337,6 +337,226 @@ int TMScene::ParseRC(FILE* fp, FILE* fpBinary, char* szControlType)
 	return 0;
 }
 
+// Visual 7.502: painel de inventario com os slots do cliente antigo (coordenadas do FieldScene2 7.502).
+static int s_nClassicChatRootX = 0;
+static int s_nClassicChatRootY = 0;
+
+// HUD 7.48: status no canto superior esquerdo, chat embaixo a esquerda, EXP e skills embaixo a direita.
+// nAnchor 0: coordenada direta; 1: base do layout 800x600 ancorada no canto inferior direito;
+// 2: ancorada no canto inferior esquerdo. Pai 65628 fica em y=525 do layout.
+static bool ApplyClassicHudLayout(int nID, int& nX, int& nY, int& nWidth, int& nHeight, int* pParent, int* pTexture, int* pStyle)
+{
+	static const struct { int nID, nParent, nX, nY, nWidth, nHeight, nTexture, nStyle, nAnchor; } stHud[] =
+	{
+		{ 65621, 65610, 14, 39, 77, 77, 419, 0, 0 }, { 65623, 65610, 95, 40, 104, 28, 421, 2, 0 }, { 65625, 65610, 125, 60, 73, 8, 422, 1, 0 },
+		{ 65612, 65610, 122, 13, 80, 16, 0, -1, 0 }, { 65613, 65610, 137, 13, 80, 16, 0, -1, 0 },
+		{ 65614, 65610, 24, 114, 20, 16, 0, -1, 0 }, { 65615, 65610, 57, 114, 20, 16, 0, -1, 0 },
+		{ 65616, 65610, 137, 34, 20, 16, 0, -1, 0 }, { 65617, 65610, 168, 34, 20, 16, 0, -1, 0 },
+
+		{ 65641, 0, 0, 37, 311, 38, 410, -1, 2 },
+
+		{ 65636, 0, 441, 22, 50, 36, 0, -1, 1 },
+		{ 65637, 0, 453, 28, 10, 10, 413, -1, 1 }, { 65638, 0, 465, 28, 10, 10, 413, -1, 1 }, { 65639, 0, 477, 28, 10, 10, 413, -1, 1 },
+		{ 65644, 0, 516, 47, 240, 23, 0, -1, 1 }, { 65645, 0, 516, 47, 240, 23, 0, -1, 1 },
+		{ 65648, 0, 516, 42, 240, 5, 0, -1, 1 }, { 65643, 0, 497, 50, 20, 12, 0, -1, 1 },
+		{ 66560, 0, 316, 0, 24, 24, 0, -1, 1 }, { 66561, 0, 343, 0, 24, 24, 0, -1, 1 }, { 66562, 0, 370, 0, 24, 24, 0, -1, 1 }, { 66563, 0, 397, 0, 24, 24, 0, -1, 1 }, { 66564, 0, 424, 0, 24, 24, 0, -1, 1 },
+		{ 66559, 0, 315, -1, 26, 26, 0, -1, 1 }, { 66558, 0, 342, -1, 26, 26, 0, -1, 1 }, { 66527, 0, 369, -1, 26, 26, 0, -1, 1 }, { 66556, 0, 396, -1, 26, 26, 0, -1, 1 }, { 66555, 0, 423, -1, 26, 26, 0, -1, 1 },
+		{ 66565, 0, 328, 12, 13, 13, 0, -1, 1 }, { 66566, 0, 355, 12, 13, 13, 0, -1, 1 }, { 66567, 0, 382, 12, 13, 13, 0, -1, 1 }, { 66568, 0, 409, 12, 13, 13, 0, -1, 1 }, { 66569, 0, 436, 12, 13, 13, 0, -1, 1 },
+		{ 65787, 0, 762, 40, 29, 29, 0, -1, 1 }, { 66570, 0, 762, 10, 29, 29, 0, -1, 1 },
+		{ 65786, 0, 470, -6, 30, 30, 0, -1, 1 }, { 65785, 0, 468, -6, 35, 15, 0, -1, 1 },
+	};
+
+	float fShiftX = RenderDevice::m_fResWidthBase - 800.0f;
+	float fShiftY = RenderDevice::m_fResHeightBase - 600.0f;
+	int nRightX = fShiftX > 0.0f ? (int)fShiftX : 0;
+	int nBottomY = fShiftY > 0.0f ? (int)fShiftY : 0;
+
+	if (nID >= 65655 && nID <= 65664)
+	{
+		int nSegment = nID - 65655;
+		nX = 316 + (nSegment * 176) / 10 + nRightX;
+		nY = 41 + nBottomY;
+		nWidth = 18;
+		nHeight = 13;
+		if (pTexture)
+			*pTexture = 414;
+		return true;
+	}
+
+	if (nID >= 65775 && nID <= 65784)
+	{
+		nX = (65784 - nID) * 24;
+		nY = 0;
+		nWidth = 23;
+		nHeight = 5;
+		return true;
+	}
+
+	if (nID == 65672)
+	{
+		// Abas do chat dentro da moldura antiga; o pai (99050) e posicionado pela resolucao.
+		nX = 8 - s_nClassicChatRootX;
+		nY = (int)RenderDevice::m_fResHeightBase - 19 - s_nClassicChatRootY;
+		return true;
+	}
+
+	for (const auto& stItem : stHud)
+	{
+		if (stItem.nID != nID)
+			continue;
+
+		nX = stItem.nX + (stItem.nAnchor == 1 ? nRightX : 0);
+		nY = stItem.nY + (stItem.nAnchor != 0 ? nBottomY : 0);
+		nWidth = stItem.nWidth;
+		nHeight = stItem.nHeight;
+		if (pParent && stItem.nParent)
+			*pParent = stItem.nParent;
+		if (pTexture && stItem.nTexture)
+			*pTexture = stItem.nTexture;
+		if (pStyle && stItem.nStyle >= 0)
+			*pStyle = stItem.nStyle;
+		return true;
+	}
+
+	return false;
+}
+
+static void AddClassicHudArt(SControlContainer* pContainer)
+{
+	SControl* pStatus = pContainer->FindControl(65610);
+	SControl* pBottom = pContainer->FindControl(65628);
+	if (pStatus == nullptr || pBottom == nullptr)
+		return;
+
+	float fRightX = RenderDevice::m_fResWidthBase > 800.0f ? RenderDevice::m_fResWidthBase - 800.0f : 0.0f;
+	float fBottomY = RenderDevice::m_fResHeightBase > 600.0f ? RenderDevice::m_fResHeightBase - 600.0f : 0.0f;
+
+	// Textos de ataque e defesa ficam antes da arte: filhos adicionados por ultimo sao desenhados por baixo.
+	static const struct { unsigned int dwID; float fX; } stValues[] =
+	{
+		{ 9100001, 335.0f }, { 9100002, 367.0f }, { 9100003, 424.0f }, { 9100004, 454.0f },
+	};
+	for (const auto& stValue : stValues)
+	{
+		auto pText = new SText(-1, "", 0xFFFFFFFF, stValue.fX + fRightX, 56.0f + fBottomY, 26.0f, 16.0f, 0, 0, 1, 1);
+		pText->SetControlID(stValue.dwID);
+		pBottom->AddChild(static_cast<TreeNode*>(pText));
+	}
+
+	static const struct { bool bStatus; int nTexture; float fX, fY, fWidth, fHeight; } stArt[] =
+	{
+		{ true, 411, 0.0f, 0.0f, 206.0f, 132.0f },
+		{ false, 409, 311.0f, 26.0f, 185.0f, 49.0f },
+		{ false, 406, 496.0f, 37.0f, 264.0f, 38.0f },
+	};
+	for (const auto& stItem : stArt)
+	{
+		float fX = stItem.fX + (stItem.bStatus ? 0.0f : fRightX);
+		float fY = stItem.fY + (stItem.bStatus ? 0.0f : fBottomY);
+		auto pPanel = new SPanel(stItem.nTexture, fX, fY, stItem.fWidth, stItem.fHeight, 0xFFFFFFFF, RENDERCTRLTYPE::RENDER_IMAGE_STRETCH);
+		pPanel->m_bPickable = 0;
+		(stItem.bStatus ? pStatus : pBottom)->AddChild(static_cast<TreeNode*>(pPanel));
+	}
+}
+
+static void ApplyClassicInventoryLayout(const char* szBinFileName, int nID, int& nX, int& nY, int& nWidth, int& nHeight,
+	int* pParent = nullptr, int* pTexture = nullptr, int* pStyle = nullptr)
+{
+	if (strstr(szBinFileName, "FieldScene2") == nullptr)
+		return;
+
+	if (nID == 99050)
+	{
+		s_nClassicChatRootX = nX;
+		s_nClassicChatRootY = nY;
+		return;
+	}
+
+	if (ApplyClassicHudLayout(nID, nX, nY, nWidth, nHeight, pParent, pTexture, pStyle))
+		return;
+
+	static const struct { int nID, nX, nY, nWidth, nHeight; } stLayout[] =
+	{
+		// Grade 9x7 (as 4 paginas ocupam o mesmo retangulo)
+		{ 67072, 6, 225, 216, 168 }, { 67073, 6, 225, 216, 168 }, { 67074, 6, 225, 216, 168 }, { 67075, 6, 225, 216, 168 },
+		// Equipamentos
+		{ 65546, 60, 32, 23, 23 }, { 65547, 144, 32, 23, 23 }, { 65548, 60, 86, 23, 23 }, { 65549, 144, 86, 23, 23 },
+		{ 65550, 60, 138, 23, 23 }, { 65551, 144, 138, 23, 23 }, { 65552, 60, 192, 23, 23 }, { 65553, 144, 192, 23, 23 },
+		{ 65555, 90, 32, 47, 47 }, { 65556, 174, 48, 47, 95 }, { 65557, 6, 48, 47, 95 }, { 65558, 90, 88, 47, 47 },
+		{ 65559, 90, 144, 47, 71 }, { 65560, 6, 152, 47, 47 }, { 65561, 174, 152, 47, 47 },
+		// Slots extras do 7.87 nas 3 celulas livres da grade e lixeira rapida
+		{ 1048976, 150, 369, 24, 24 }, { 1048977, 174, 369, 24, 24 }, { 1048978, 198, 369, 24, 24 }, { 67080, 172, 395, 22, 22 },
+		// Honra e cash abaixo da grade
+		{ 1048981, 6, 395, 50, 12 }, { 1048982, 6, 406, 50, 12 },
+
+		// Bau: grade 9x14
+		{ 67328, 6, 57, 216, 336 }, { 67329, 6, 57, 216, 336 }, { 67330, 6, 57, 216, 336 }, { 67331, 6, 57, 216, 336 },
+
+		// Personagem (posicoes do painel 7.502)
+		{ 65703, 55, 42, 90, 16 }, { 65704, 7, 42, 90, 16 }, { 65705, 55, 58, 90, 16 }, { 65706, 7, 58, 90, 16 },
+		{ 65707, 55, 74, 90, 16 }, { 65708, 127, 74, 90, 16 }, { 65709, 7, 74, 90, 16 },
+		{ 65710, 55, 90, 67, 16 }, { 65711, 134, 90, 67, 16 }, { 65712, 7, 90, 67, 16 },
+		{ 65713, 179, 42, 33, 16 }, { 65714, 143, 42, 33, 16 },
+		{ 65715, 55, 130, 67, 16 }, { 65717, 7, 130, 67, 16 }, { 65716, 93, 132, 13, 13 },
+		{ 65718, 55, 146, 67, 16 }, { 65720, 7, 146, 67, 16 }, { 65719, 93, 148, 13, 13 },
+		{ 65721, 55, 162, 67, 16 }, { 65723, 7, 162, 67, 16 }, { 65722, 93, 164, 13, 13 },
+		{ 65724, 55, 178, 67, 16 }, { 65726, 7, 178, 67, 16 }, { 65725, 93, 180, 13, 13 },
+		{ 65727, 55, 194, 67, 16 }, { 65728, 7, 194, 67, 16 },
+		{ 65729, 67, 215, 67, 16 }, { 65730, 7, 215, 67, 16 }, { 65731, 67, 231, 67, 16 }, { 65732, 7, 231, 67, 16 },
+		{ 65733, 67, 247, 67, 16 }, { 65734, 7, 247, 67, 16 }, { 65739, 67, 263, 67, 16 }, { 65740, 7, 263, 67, 16 },
+		{ 65737, 174, 215, 67, 16 }, { 65738, 115, 215, 67, 16 }, { 65735, 174, 231, 67, 16 }, { 65736, 115, 231, 67, 16 },
+		{ 65741, 174, 247, 67, 16 }, { 65742, 115, 247, 67, 16 }, { 65743, 174, 263, 67, 16 }, { 65744, 115, 263, 67, 16 },
+		{ 65745, 174, 132, 67, 16 }, { 65746, 127, 132, 67, 16 }, { 65747, 174, 148, 67, 16 }, { 65748, 127, 148, 67, 16 },
+		{ 65749, 174, 164, 67, 16 }, { 65750, 127, 164, 67, 16 }, { 65751, 174, 180, 67, 16 }, { 65752, 127, 180, 67, 16 },
+		{ 65753, 155, 309, 67, 16 }, { 65755, 67, 309, 67, 16 }, { 65754, 199, 311, 13, 13 },
+		{ 65756, 155, 325, 67, 16 }, { 65758, 67, 325, 67, 16 }, { 65757, 199, 327, 13, 13 },
+		{ 65759, 155, 341, 67, 16 }, { 65761, 67, 341, 67, 16 }, { 65760, 199, 343, 13, 13 },
+		{ 65762, 155, 357, 67, 16 }, { 65764, 67, 357, 67, 16 }, { 65763, 199, 359, 13, 13 },
+		{ 65765, 165, 373, 67, 16 }, { 65766, 67, 373, 67, 16 },
+
+		// Tecnicas: 12 molduras por categoria
+		{ 65569, 81, 5, 90, 16 }, { 65570, 33, 40, 90, 16 }, { 65571, 33, 130, 90, 16 }, { 65572, 33, 220, 90, 16 }, { 65573, 33, 310, 90, 16 },
+		{ 65574, 30, 63, 21, 21 }, { 65575, 59, 63, 21, 21 }, { 65576, 88, 63, 21, 21 }, { 65577, 117, 63, 21, 21 }, { 65578, 146, 63, 21, 21 }, { 65579, 175, 63, 21, 21 },
+		{ 65580, 30, 95, 21, 21 }, { 65581, 59, 95, 21, 21 }, { 94208, 88, 95, 21, 21 }, { 94209, 117, 95, 21, 21 }, { 94210, 146, 95, 21, 21 }, { 94211, 175, 95, 21, 21 },
+		{ 65582, 30, 153, 21, 21 }, { 65583, 59, 153, 21, 21 }, { 65584, 88, 153, 21, 21 }, { 65585, 117, 153, 21, 21 }, { 65586, 146, 153, 21, 21 }, { 65587, 175, 153, 21, 21 },
+		{ 65588, 30, 185, 21, 21 }, { 65589, 59, 185, 21, 21 }, { 94212, 88, 185, 21, 21 }, { 94213, 117, 185, 21, 21 }, { 94214, 146, 185, 21, 21 }, { 94215, 175, 185, 21, 21 },
+		{ 65590, 30, 243, 21, 21 }, { 65591, 59, 243, 21, 21 }, { 65592, 88, 243, 21, 21 }, { 65593, 117, 243, 21, 21 }, { 65594, 146, 243, 21, 21 }, { 65595, 175, 243, 21, 21 },
+		{ 65596, 30, 275, 21, 21 }, { 65597, 59, 275, 21, 21 }, { 94216, 88, 275, 21, 21 }, { 94217, 117, 275, 21, 21 }, { 94218, 146, 275, 21, 21 }, { 94219, 175, 275, 21, 21 },
+		{ 65598, 30, 333, 174, 64 }, { 65599, 50, 400, 60, 12 }, { 65600, 138, 400, 33, 12 },
+
+		// Loja: grade 9x13
+		{ 65694, 6, 81, 216, 312 },
+
+		// Mestre de tecnicas
+		{ 65604, 33, 40, 90, 16 }, { 65605, 33, 130, 90, 16 }, { 65606, 33, 220, 90, 16 },
+
+		// Titulos e valores nas posicoes do 7.543
+		{ 65701, 169, 115, 90, 16 }, { 65687, 89, 4, 90, 16 }, { 65689, 37, 397, 74, 18 }, { 65693, 89, 5, 90, 16 },
+	};
+
+	for (const auto& stItem : stLayout)
+	{
+		if (stItem.nID == nID)
+		{
+			nX = stItem.nX;
+			nY = stItem.nY;
+			nWidth = stItem.nWidth;
+			nHeight = stItem.nHeight;
+			return;
+		}
+	}
+
+	// Fundos de slot, botoes de pagina e datas das bolsas nao existem na arte antiga.
+	if ((nID >= 3080 && nID <= 3112) || nID == 43087 || (nID >= 67076 && nID <= 67079) || nID == 77834 || nID == 77835 ||
+		(nID >= 3000 && nID <= 3079) || (nID >= 67332 && nID <= 67335) ||
+		(nID >= 66496 && nID <= 66554 && nID != 66527) || (nID >= 3120 && nID <= 3144) ||
+		nID == 469636 || nID == 569636 || nID == 69635 || nID == 69636 || nID == 65681)
+	{
+		nX = -3000;
+		nY = -3000;
+	}
+}
+
 int TMScene::ReadRCBin(char* szBinFileName)
 {
 	FILE* fpBinary = nullptr;
@@ -373,6 +593,7 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binPanelData.nStartY = controlBase.nStartY;
 			binPanelData.nWidth = controlBase.nWidth;
 			binPanelData.nHeight = controlBase.nHeight;
+			ApplyClassicInventoryLayout(szBinFileName, binPanelData.nID, binPanelData.nStartX, binPanelData.nStartY, binPanelData.nWidth, binPanelData.nHeight, &binPanelData.nParentID, &binPanelData.nTextureSetIndex);
 			 
 			auto pPanel = new SPanel(
 				binPanelData.nTextureSetIndex,
@@ -433,6 +654,7 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binGridData.nStartY = controlBase.nStartY;
 			binGridData.nWidth = controlBase.nWidth;
 			binGridData.nHeight = controlBase.nHeight;
+			ApplyClassicInventoryLayout(szBinFileName, binGridData.nID, binGridData.nStartX, binGridData.nStartY, binGridData.nWidth, binGridData.nHeight);
 
 			auto pGrid = new SGridControl(
 				binGridData.nTextureSetIndex,
@@ -549,6 +771,7 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binButtonData.nStartY = controlBase.nStartY;
 			binButtonData.nWidth = controlBase.nWidth;
 			binButtonData.nHeight = controlBase.nHeight;
+			ApplyClassicInventoryLayout(szBinFileName, binButtonData.nID, binButtonData.nStartX, binButtonData.nStartY, binButtonData.nWidth, binButtonData.nHeight);
 
 			/*texto no btn*/
 			char strbuf[128]{};
@@ -616,6 +839,7 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binTextData.nStartY = controlBase.nStartY;
 			binTextData.nWidth = controlBase.nWidth;
 			binTextData.nHeight = controlBase.nHeight;
+			ApplyClassicInventoryLayout(szBinFileName, binTextData.nID, binTextData.nStartX, binTextData.nStartY, binTextData.nWidth, binTextData.nHeight, &binTextData.nParentID);
 			char strbuf[128]{};
 
 			sprintf_s(strbuf, "%s", g_UIString[binTextData.nStringIndex]);
@@ -749,6 +973,7 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binProgressData.nStartY = controlBase.nStartY;
 			binProgressData.nWidth = controlBase.nWidth;
 			binProgressData.nHeight = controlBase.nHeight;
+			ApplyClassicInventoryLayout(szBinFileName, binProgressData.nID, binProgressData.nStartX, binProgressData.nStartY, binProgressData.nWidth, binProgressData.nHeight, &binProgressData.nParentID, &binProgressData.nTextureSetIndex, &binProgressData.nStyle);
 
 			auto pProgress = new SProgressBar(
 				binProgressData.nTextureSetIndex,
@@ -929,6 +1154,9 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			return 0;
 		}
 	}
+
+	if (strstr(szBinFileName, "FieldScene2") != nullptr)
+		AddClassicHudArt(m_pControlContainer);
 
 	fclose(fpBinary);
 

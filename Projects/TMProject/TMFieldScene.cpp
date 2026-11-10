@@ -82,6 +82,18 @@ int TMFieldScene::previousLevel = 0;
 unsigned short TMFieldScene::m_usProgress = 0;
 unsigned int TMFieldScene::m_dwCargoID = 0;
 
+// As janelas foram desenhadas para 800 de largura; em telas maiores ficariam no canto.
+// Centraliza o conjunto das 3 colunas (x 60 a 741, y 35 a 456).
+static float ClassicPanelX(float fBaseX)
+{
+	return ((float)g_pDevice->m_dwScreenWidth * 0.5f) + ((fBaseX - 400.5f) * RenderDevice::m_fWidthRatio);
+}
+
+static float ClassicPanelY(float fBaseY)
+{
+	return ((float)g_pDevice->m_dwScreenHeight * 0.5f) + ((fBaseY - 245.5f) * RenderDevice::m_fHeightRatio);
+}
+
 TMFieldScene::TMFieldScene()
 	: TMScene()
 {
@@ -1173,7 +1185,7 @@ int TMFieldScene::InitializeScene()
 		m_pMainInfo2->SetStickLeft();
 		m_pMainInfo2->SetStickTop();
 		m_pMainInfo2_Name = (SText*)m_pControlContainer->FindControl(65611);
-		m_pMainInfo2->SetVisible(0);
+		m_pMainInfo2->SetVisible(1);
 	}
 
 	m_pMainInfo2_Lv = (SText*)m_pControlContainer->FindControl(65613);
@@ -1231,8 +1243,8 @@ int TMFieldScene::InitializeScene()
 
 	SPanel* pPanel1 = (SPanel*)m_pControlContainer->FindControl(65565);
 
-	m_pInvenPanel->SetPos(RenderDevice::m_fWidthRatio * 514.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
+	m_pInvenPanel->SetPos(ClassicPanelX(514.0f),
+		ClassicPanelY(35.0f));
 
 	if (m_pInvenPanel)
 	{
@@ -1265,12 +1277,12 @@ int TMFieldScene::InitializeScene()
 	m_MissionClass.TakeItResource(m_pControlContainer, g_pObjectManager->m_dwCharID);
 
 	if (m_pItemMixPanel4)
-		m_pItemMixPanel4->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-			RenderDevice::m_fHeightRatio * 35.0f);
+		m_pItemMixPanel4->SetPos(ClassicPanelX(287.0f),
+			ClassicPanelY(35.0f));
 
 	if (m_pItemMixPanel)
-		m_pItemMixPanel->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-			RenderDevice::m_fHeightRatio * 35.0f);
+		m_pItemMixPanel->SetPos(ClassicPanelX(287.0f),
+			ClassicPanelY(35.0f));
 
 	if (m_pMix4Desc)
 		LoadMsgText(m_pMix4Desc, (char*)"UI\\mix4desc.txt");
@@ -1380,8 +1392,8 @@ int TMFieldScene::InitializeScene()
 	m_pCPanel = (SPanel*)m_pControlContainer->FindControl(65696);
 
 	SPanel* pCPanel1 = (SPanel*)m_pControlContainer->FindControl(65770);
-	m_pCPanel->SetPos(RenderDevice::m_fWidthRatio * 60.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
+	m_pCPanel->SetPos(ClassicPanelX(60.0f),
+		ClassicPanelY(35.0f));
 
 	m_pSystemPanel->SetPos(((float)g_pDevice->m_dwScreenWidth * 0.5f) - (m_pSystemPanel->m_nWidth * 0.5f),
 		((float)g_pDevice->m_dwScreenHeight * 0.5f) - (m_pSystemPanel->m_nHeight * 0.5f));
@@ -1402,8 +1414,8 @@ int TMFieldScene::InitializeScene()
 
 	SPanel* pShopPanel1 = (SPanel*)m_pControlContainer->FindControl(65695);
 
-	m_pShopPanel->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
+	m_pShopPanel->SetPos(ClassicPanelX(287.0f),
+		ClassicPanelY(35.0f));
 
 	if (m_pShopPanel)
 	{
@@ -1414,10 +1426,10 @@ int TMFieldScene::InitializeScene()
 	m_pCargoPanel1 = (SPanel*)m_pControlContainer->FindControl(65692);
 
 	SPanel* pCargoPanel1 = (SPanel*)m_pControlContainer->FindControl(65691);
-	m_pCargoPanel->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
-	m_pCargoPanel1->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
+	m_pCargoPanel->SetPos(ClassicPanelX(287.0f),
+		ClassicPanelY(35.0f));
+	m_pCargoPanel1->SetPos(ClassicPanelX(287.0f),
+		ClassicPanelY(35.0f));
 
 	if (m_pCargoPanel)
 	{
@@ -1429,8 +1441,8 @@ int TMFieldScene::InitializeScene()
 	SPanel* pTradePanel = (SPanel*)m_pControlContainer->FindControl(576);
 	SPanel* pTradePanel1 = (SPanel*)m_pControlContainer->FindControl(577);
 
-	pTradePanel->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
+	pTradePanel->SetPos(ClassicPanelX(287.0f),
+		ClassicPanelY(35.0f));
 
 	m_pTradePanel = pTradePanel;
 
@@ -1460,8 +1472,8 @@ int TMFieldScene::InitializeScene()
 	SPanel* pSkillMPanel1 = (SPanel*)m_pControlContainer->FindControl(65609);
 	m_pSkillMDesc = (SListBox*)m_pControlContainer->FindControl(65608);
 
-	m_pSkillMPanel->SetPos(RenderDevice::m_fWidthRatio * 60.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
+	m_pSkillMPanel->SetPos(ClassicPanelX(60.0f),
+		ClassicPanelY(35.0f));
 
 	if (m_pSkillMPanel)
 	{
@@ -1474,8 +1486,8 @@ int TMFieldScene::InitializeScene()
 	SPanel* pSkillPanel1 = (SPanel*)m_pControlContainer->FindControl(65601);
 	SText* pSkillBonus = (SText*)m_pControlContainer->FindControl(65600);
 
-	m_pSkillPanel->SetPos(RenderDevice::m_fWidthRatio * 514.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
+	m_pSkillPanel->SetPos(ClassicPanelX(514.0f),
+		ClassicPanelY(35.0f));
 
 	SPanel* pSkillTitlePanel = (SPanel*)m_pControlContainer->FindControl(1912);
 	SPanel* pSkillGridPanel = (SPanel*)m_pControlContainer->FindControl(1910);
@@ -17043,11 +17055,11 @@ void TMFieldScene::SetVisibleShop(int bShow)
 	m_pShopPanel->SetVisible(bShow);
 
 
-	m_pShopPanel->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-		RenderDevice::m_fHeightRatio * 35.0f);
+	m_pShopPanel->SetPos(ClassicPanelX(287.0f),
+		ClassicPanelY(35.0f));
 
 	if (bShow)
-		m_pInvenPanel->SetPos(RenderDevice::m_fWidthRatio * 514.0f, RenderDevice::m_fHeightRatio * 35.0f);
+		m_pInvenPanel->SetPos(ClassicPanelX(514.0f), ClassicPanelY(35.0f));
 
 	m_pInvenPanel->SetVisible(bShow);
 
@@ -17074,12 +17086,12 @@ void TMFieldScene::SetVisibleCargo(int bShow)
 
 	if (bShow)
 	{
-		m_pCargoPanel->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-			RenderDevice::m_fHeightRatio * 35.0f);
+		m_pCargoPanel->SetPos(ClassicPanelX(287.0f),
+			ClassicPanelY(35.0f));
 
-		m_pCargoPanel1->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-			RenderDevice::m_fHeightRatio * 35.0f);
-			m_pInvenPanel->SetPos(RenderDevice::m_fWidthRatio * 514.0f, RenderDevice::m_fHeightRatio * 35.0f); 
+		m_pCargoPanel1->SetPos(ClassicPanelX(287.0f),
+			ClassicPanelY(35.0f));
+			m_pInvenPanel->SetPos(ClassicPanelX(514.0f), ClassicPanelY(35.0f)); 
 	}
 
 	m_pInvenPanel->SetVisible(bShow);
@@ -17111,10 +17123,10 @@ void TMFieldScene::SetVisibleCargo1(int bShow)
 
 	if (bShow)
 	{
-		pPanel->SetPos(RenderDevice::m_fWidthRatio * 514.0f,
-			RenderDevice::m_fHeightRatio * 35.0f);
-		m_pCargoPanel1->SetPos(RenderDevice::m_fWidthRatio * 287.0f,
-			RenderDevice::m_fHeightRatio * 35.0f);
+		pPanel->SetPos(ClassicPanelX(514.0f),
+			ClassicPanelY(35.0f));
+		m_pCargoPanel1->SetPos(ClassicPanelX(287.0f),
+			ClassicPanelY(35.0f));
 	}
 
 	pPanel->SetVisible(bShow);
@@ -17897,7 +17909,7 @@ void TMFieldScene::SetVisibleSkillMaster()
 		m_pSkillPanel->SetVisible(1);
 		m_pHellgateStore->SetVisible(0);
 		m_pGambleStore->SetVisible(0);
-		m_pSkillPanel->SetPos(RenderDevice::m_fWidthRatio * 287.0f, RenderDevice::m_fHeightRatio * 35.0f);
+		m_pSkillPanel->SetPos(ClassicPanelX(287.0f), ClassicPanelY(35.0f));
 	}
 
 	if (g_pSoundManager)
@@ -17918,7 +17930,7 @@ void TMFieldScene::SetVisibleSkill(int bVisible)
 
 	if (bVisible == 1)
 	{
-		m_pSkillPanel->SetPos(RenderDevice::m_fWidthRatio * 287.0f, RenderDevice::m_fHeightRatio * 35.0f);
+		m_pSkillPanel->SetPos(ClassicPanelX(287.0f), ClassicPanelY(35.0f));
 	}
 	else
 	{
@@ -18271,6 +18283,22 @@ void TMFieldScene::UpdateScoreUI(unsigned int unFlag)
 		{
 			m_pCIClass->SetText((char*)szClass[pMobData->Class], 0);
 			m_pCIClass2->SetText((char*)" ", 0);
+		}
+
+		// Ataque e defesa na moldura de EXP do HUD 7.48.
+		struct { unsigned int dwID; long long llValue; } stHudValues[] =
+		{
+			{ 9100001, pMobData->CurrentScore.Damage }, { 9100002, pMobData->BaseScore.Damage },
+			{ 9100003, pMobData->CurrentScore.Ac }, { 9100004, pMobData->BaseScore.Ac },
+		};
+		for (const auto& stValue : stHudValues)
+		{
+			auto pHudText = (SText*)m_pControlContainer->FindControl(stValue.dwID);
+			if (pHudText)
+			{
+				sprintf(szStr, "%lld", stValue.llValue);
+				pHudText->SetText(szStr, 0);
+			}
 		}
 
 		sprintf(szStr, "%lld", pMobData->CurrentScore.Str);
@@ -29773,8 +29801,8 @@ void TMFieldScene::SetVisibleMixPanel(int bShow)
 		}
 
 		m_ItemMixClass.m_pMixPanel->SetVisible(1);
-		m_pInvenPanel->SetPos(RenderDevice::m_fWidthRatio * 514.0f,
-			RenderDevice::m_fHeightRatio * 35.0f);
+		m_pInvenPanel->SetPos(ClassicPanelX(514.0f),
+			ClassicPanelY(35.0f));
 
 		g_pDevice->m_nWidthShift = 0;
 		g_pCursor->DetachItem();
@@ -29850,8 +29878,8 @@ void TMFieldScene::SetVisibleMissionPanel(int bShow)
 		}
 
 		m_MissionClass.m_pMissionPanel->SetVisible(1);
-		m_pInvenPanel->SetPos(RenderDevice::m_fWidthRatio * 514.0f,
-			RenderDevice::m_fHeightRatio * 35.0f);
+		m_pInvenPanel->SetPos(ClassicPanelX(514.0f),
+			ClassicPanelY(35.0f));
 
 		g_pDevice->m_nWidthShift = 0;
 		g_pCursor->DetachItem();

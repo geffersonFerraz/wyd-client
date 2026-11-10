@@ -605,7 +605,7 @@ void SCursor::FrameMove2(stGeomList* pDrawList, TMVector2 ivParenPos, int inPare
 			m_GeomItem.nPosY = (float)m_nPosY + m_pAttachedItem->GetPos().y;
 
 			m_GeomItem.nLayer = m_GCPanel.nLayer;
-			m_GeomItem.fScale *= 1.5f;
+			m_GeomItem.fScale *= 1.25f;
 
 			unsigned int dwServerTime = g_pTimerManager->GetServerTime() % 3000;
 			m_GeomItem.fAngle = ((float)dwServerTime * 6.28f) / 3000.0f;

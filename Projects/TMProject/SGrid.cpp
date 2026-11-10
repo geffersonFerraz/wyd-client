@@ -154,6 +154,39 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 	bool bClick = false;
 
 	auto pFScene = static_cast<TMFieldScene*>(g_pCurrentScene);
+
+	if (IsClassicList())
+	{
+		int nView = -1;
+		if (bPtInRect)
+		{
+			int nViewX = (int)(((float)nX - m_nPosX) / (m_nWidth / (float)ClassicColumns()));
+			int nViewY = (int)(((float)nY - m_nPosY) / (m_nHeight / (float)ClassicRows()));
+			if (nViewX >= 0 && nViewX < ClassicColumns() && nViewY >= 0 && nViewY < ClassicRows())
+				nView = nViewY * ClassicColumns() + nViewX;
+		}
+
+		// So a pagina dona da celula responde; as demais agem como um grid fora do cursor.
+		int nSlot = nView;
+		if (nSlot >= 0 && nSlot < ClassicPageSize() * 4 && nSlot / ClassicPageSize() == ClassicPage())
+		{
+			int nInPage = nSlot % ClassicPageSize();
+			nCellX = nInPage % 5;
+			nCellY = nInPage / 5;
+			if (IsClassicInv())
+				pFScene->m_pGridInv = this;
+			else if (IsClassicCargo())
+				pFScene->m_pCargoGrid = this;
+		}
+		else
+		{
+			bPtInRect = 0;
+			nCellX = -1;
+			nCellY = -1;
+		}
+	}
+
+
 	if (!bPtInRect)
 	{
 		for (int i = 0; i < m_nNumItem; ++i)
@@ -598,7 +631,30 @@ void SGridControl::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int 
 	{
 		ConsolePainelMacro(7);
 	}
-	if (m_bDrawGrid == 1)
+	if (IsClassicList())
+	{
+		// A arte antiga ja traz a grade desenhada; so escurece as paginas sem bolsa.
+		int nPage = ClassicPage();
+		if (IsClassicInv() &&
+			((nPage == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467) ||
+			(nPage == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)))
+		{
+			for (int nCell = 0; nCell < 15; ++nCell)
+			{
+				int nView = nPage * 15 + nCell;
+				GeomControl* pCell = &m_GCGrid[nCell];
+				pCell->nTextureSetIndex = -2;
+				pCell->dwColor = 0x99000000;
+				pCell->nWidth = m_nWidth / 9.0f;
+				pCell->nHeight = m_nHeight / 7.0f;
+				pCell->nPosX = (ivParentPos.x + m_nPosX) + (float)(nView % 9) * pCell->nWidth;
+				pCell->nPosY = (ivParentPos.y + m_nPosY) + (float)(nView / 9) * pCell->nHeight;
+				pCell->nLayer = inParentLayer;
+				AddRenderControlItem(pDrawList, pCell, inParentLayer);
+			}
+		}
+	}
+	else if (m_bDrawGrid == 1)
 	{
 		for (int nY = 0; nY < m_nRowGridCount; ++nY)
 		{
@@ -702,6 +758,17 @@ void SGridControl::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int 
 			(float)(ivParentPos.y + m_nPosY)
 			+ ((float)((float)pGridCurrent->m_nCellIndexY * m_nHeight) / (float)m_nRowGridCount));
 
+		if (IsClassicList())
+		{
+			int nView = 0;
+			if (!GetClassicView(pGridCurrent->m_nCellIndexX, pGridCurrent->m_nCellIndexY, nView))
+				continue;
+
+			vecPos.x = (ivParentPos.x + m_nPosX) + (float)(nView % ClassicColumns()) * (m_nWidth / (float)ClassicColumns());
+			vecPos.y = (ivParentPos.y + m_nPosY) + (float)(nView / ClassicColumns()) * (m_nHeight / (float)ClassicRows());
+		}
+
+
 
 
 
@@ -764,6 +831,14 @@ void SGridControl::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int 
 		{
 			pGridCurrent->m_GCEnable.nWidth = (float)(SControl::m_nGridCellSize * pGridCurrent->m_nCellWidth);
 			pGridCurrent->m_GCEnable.nHeight = (float)(SControl::m_nGridCellSize * pGridCurrent->m_nCellHeight);
+		}
+
+		if (IsClassicList())
+		{
+			pGridCurrent->m_GCEnable.nPosX = vecPos.x;
+			pGridCurrent->m_GCEnable.nPosY = vecPos.y;
+			pGridCurrent->m_GCEnable.nWidth = m_nWidth / (float)ClassicColumns();
+			pGridCurrent->m_GCEnable.nHeight = m_nHeight / (float)ClassicRows();
 		}
 
 		pGridCurrent->m_GCEnable.nLayer = inParentLayer;
@@ -909,6 +984,11 @@ IVector2 SGridControl::CanAddItemInEmpty(int nWidth, int nHeight)
 	{
 		for (int nY = 0; nY <= m_nRowGridCount - nHeight; ++nY)
 		{
+			// Slots do bau que nao cabem na grade antiga nao recebem item automaticamente.
+			int nView = 0;
+			if (IsClassicCargo() && !GetClassicView(nX, nY, nView))
+				continue;
+
 			if (CanItAdd(m_pbFilled, nX, nY, nWidth, nHeight) == 1)
 			{
 				vec.x = nX;
@@ -6073,6 +6153,34 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 		m_GCObj.nHeight = m_nHeight;
 		m_GCObj.nLayer = inParentLayer;
  
+		// Na grade antiga e nos slots de equipamento, o item ocupa o slot inteiro.
+		bool bClassicSlot = m_pGridControl &&
+			(m_pGridControl->IsClassicList() || m_pGridControl->m_eItemType != TMEITEMTYPE::ITEMTYPE_NONE);
+		float fSlotWidth = 0.0f;
+		float fSlotHeight = 0.0f;
+		if (bClassicSlot)
+		{
+			if (m_pGridControl->IsClassicList())
+			{
+				fSlotWidth = m_pGridControl->m_nWidth / (float)m_pGridControl->ClassicColumns();
+				fSlotHeight = m_pGridControl->m_nHeight / (float)m_pGridControl->ClassicRows();
+			}
+			else
+			{
+				fSlotWidth = m_pGridControl->m_nWidth;
+				fSlotHeight = m_pGridControl->m_nHeight;
+			}
+		}
+
+		if (bClassicSlot && m_GCObj.eRenderType != RENDERCTRLTYPE::RENDER_3DOBJ)
+		{
+			float fSize = fSlotWidth < fSlotHeight ? fSlotWidth : fSlotHeight;
+			m_GCObj.nPosX += (fSlotWidth - fSize) / 2.0f;
+			m_GCObj.nPosY += (fSlotHeight - fSize) / 2.0f;
+			m_GCObj.nWidth = fSize;
+			m_GCObj.nHeight = fSize;
+		}
+
 		if (m_GCObj.eRenderType == RENDERCTRLTYPE::RENDER_3DOBJ)
 		{
 			float fCellWidth = m_nWidth;
@@ -6080,7 +6188,14 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 			int nCellsX = m_nCellWidth;
 			int nCellsY = m_nCellHeight;
 
-			if (m_pGridControl && m_pGridControl->m_nColumnGridCount > 0 && m_pGridControl->m_nRowGridCount > 0)
+			if (bClassicSlot)
+			{
+				fCellWidth = fSlotWidth;
+				fCellHeight = fSlotHeight;
+				nCellsX = 1;
+				nCellsY = 1;
+			}
+			else if (m_pGridControl && m_pGridControl->m_nColumnGridCount > 0 && m_pGridControl->m_nRowGridCount > 0)
 			{
 				int nColumns = m_pGridControl->m_nColumnGridCount;
 				int nRows = m_pGridControl->m_nRowGridCount;
@@ -6112,6 +6227,10 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 				{
 					float fFit = (0.42f * fSlot) / (fHalf * fPixelsPerUnit);
 					m_GCObj.fScale = fFit > 1.6f ? 1.6f : fFit;
+
+					// Inspecao: o item sob o cursor ou selecionado cresce um pouco.
+					if (m_bOver == 1 || m_bSelect == 1)
+						m_GCObj.fScale *= 1.25f;
 				}
 			}
 
@@ -6122,7 +6241,7 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 			m_GCObj.nPosX = fLeft + (fCellWidth * (float)nCellsX) / 2.0f;
 			m_GCObj.nPosY = fTop + (fCellHeight * (float)nCellsY) / 2.0f;
 			m_GCObj.fAngle = 0.0f;
-			if (m_bOver == 1)
+			if (m_bOver == 1 || m_bSelect == 1)
 				m_GCObj.fAngle = ((float)(g_pTimerManager->GetServerTime() % 3000) * 6.28f) / 3000.0f;
 
 			AddRenderControlItem(pDrawList, &m_GCObj, inParentLayer);
@@ -6130,8 +6249,8 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 			int nLength = (int)strlen(m_GCText.strString);
 			if (nLength > 0)
 			{
-				m_GCText.nPosX = fLeft + m_nWidth - (float)(7 * nLength);
-				m_GCText.nPosY = fTop + m_nHeight - 12.0f;
+				m_GCText.nPosX = fLeft + (fCellWidth * (float)nCellsX) - (float)(7 * nLength);
+				m_GCText.nPosY = fTop + (fCellHeight * (float)nCellsY) - 12.0f;
 				AddRenderControlItem(pDrawList, &m_GCText, inParentLayer);
 			}
 			return;
@@ -6152,6 +6271,17 @@ int SGridControlItem::PtInItem(int inPosX, int inPosY)
 int SGridControlItem::PtAtItem(int inPosX, int inPosY)
 {
 	return inPosX == m_nCellIndexX && inPosY == m_nCellIndexY;
+}
+
+void SGridControl::SetVisible(int bVisible)
+{
+	SPanel::SetVisible(IsClassicList() ? 1 : bVisible);
+}
+
+bool SGridControl::GetClassicView(int nCellX, int nCellY, int& nView) const
+{
+	nView = ClassicPage() * ClassicPageSize() + nCellY * 5 + nCellX;
+	return nView >= 0 && nView < ClassicColumns() * ClassicRows();
 }
 
 int SGridControl::GetIndexFromCoordinates(int x, int y)

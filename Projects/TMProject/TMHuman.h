@@ -259,7 +259,13 @@ public:
     SProgressBar* m_pTitleProgressBar1;
     SText* m_pTitleNameLabel;
     // The camera grows with Con; past the old 16-bit range it would leave the map.
-    float GetCameraCon() const { return m_stScore.Con > 32767 ? 32767.0f : static_cast<float>(m_stScore.Con); }
+    float GetCameraCon() const
+    {
+        // Mesma regra de SetCharHeight: abaixo do nivel 500 o corpo para de crescer em 500.
+        if (m_stScore.Level < 500 && m_stScore.Con > 500)
+            return 500.0f;
+        return m_stScore.Con > 32767 ? 32767.0f : static_cast<float>(m_stScore.Con);
+    }
     STRUCT_SCORE m_stScore;
     TMVector3 m_vecOldFire;
     TMVector2 m_vecMoveToPos;

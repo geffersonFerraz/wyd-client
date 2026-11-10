@@ -88,6 +88,19 @@ public:
     void SortItems(std::function<bool(SGridControlItem*, SGridControlItem*)> compare);
 
     int GetIndexFromCoordinates(int x, int y);
+
+    // Visual 7.502: as paginas internas continuam existindo; so a vista e o clique mudam.
+    // Inventario: 60 slots em grade 9x7. Bau: grade 9x14, 126 slots. Loja: grade 9x13.
+    bool IsClassicInv() const { return m_dwControlID >= 67072 && m_dwControlID <= 67075; }
+    bool IsClassicCargo() const { return m_dwControlID >= 67328 && m_dwControlID <= 67331; }
+    bool IsClassicShop() const { return m_dwControlID == 65694; }
+    bool IsClassicList() const { return IsClassicInv() || IsClassicCargo() || IsClassicShop(); }
+    int ClassicColumns() const { return 9; }
+    int ClassicRows() const { return IsClassicInv() ? 7 : (IsClassicCargo() ? 14 : 13); }
+    int ClassicPageSize() const { return IsClassicInv() ? 15 : 40; }
+    int ClassicPage() const { return IsClassicInv() ? (int)m_dwControlID - 67072 : (IsClassicCargo() ? (int)m_dwControlID - 67328 : 0); }
+    bool GetClassicView(int nCellX, int nCellY, int& nView) const;
+    void SetVisible(int bVisible) override;
     void RemoveItemAt(int x, int y);
     short CheckType(TMEITEMTYPE eType, TMEGRIDTYPE eGridType);
     short CheckPos(TMEITEMTYPE eType);
