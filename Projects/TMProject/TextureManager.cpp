@@ -231,6 +231,24 @@ int TextureManager::InitUITextureList()
 	fread(m_stUITextureList, sizeof(m_stUITextureList), 1, fpBin);
 	fclose(fpBin);
 
+	// Atlas do HUD 7.543 (o 7.87 usa outro desenho nos mesmos arquivos NUI).
+	sprintf(m_stUITextureList[900].szFileName, "NUI\\mainparts543.wyt");
+	m_stUITextureList[900].cAlpha = 65;
+	sprintf(m_stUITextureList[901].szFileName, "NUI\\main543.wyt");
+	m_stUITextureList[901].cAlpha = 65;
+	sprintf(m_stUITextureList[902].szFileName, "NUI\\mainchat543.wyt");
+	m_stUITextureList[902].cAlpha = 65;
+
+	// Abertura 7.543: logo, painel de servidores e caixa de login.
+	sprintf(m_stUITextureList[903].szFileName, "UI\\logo1543.wyt");
+	m_stUITextureList[903].cAlpha = 65;
+	sprintf(m_stUITextureList[904].szFileName, "UI\\logo2543.wyt");
+	m_stUITextureList[904].cAlpha = 65;
+	sprintf(m_stUITextureList[905].szFileName, "NUI\\ServerList543.wyt");
+	m_stUITextureList[905].cAlpha = 65;
+	sprintf(m_stUITextureList[906].szFileName, "NUI\\popup543.wyt");
+	m_stUITextureList[906].cAlpha = 65;
+
 	for (int i = 0; i < 1000; ++i)// aqui atalho para exibir id do registro das texturas pois a sua .bin ta bugada para ferramenta. dessa forma consegue depurra e encotnrar.
 	{
 		if (i >= 363 && i <= 364)//definição de texturas alfas

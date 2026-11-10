@@ -100,6 +100,12 @@ public:
     int ClassicPageSize() const { return IsClassicInv() ? 15 : 40; }
     int ClassicPage() const { return IsClassicInv() ? (int)m_dwControlID - 67072 : (IsClassicCargo() ? (int)m_dwControlID - 67328 : 0); }
     bool GetClassicView(int nCellX, int nCellY, int& nView) const;
+    void LayoutClassicShop();
+    static void ClassicItemSize(int nItemIndex, int& nWidth, int& nHeight);
+    bool IsClassicCarry() const { return IsClassicInv() || IsClassicCargo(); }
+    static SGridControlItem* ClassicItemAt(bool bCargo, int nViewX, int nViewY);
+    static bool ClassicCanPlace(bool bCargo, SGridControlItem* pMoving, int nSlot);
+    static int ClassicFirstFit(bool bCargo, SGridControlItem* pMoving);
     void SetVisible(int bVisible) override;
     void RemoveItemAt(int x, int y);
     short CheckType(TMEITEMTYPE eType, TMEGRIDTYPE eGridType);
@@ -183,4 +189,9 @@ public:
     TMFont2 m_Font;
     STRUCT_ITEM* m_pItem;
     float m_fTimer;
+    // Visual 7.502: celulas ocupadas na grade antiga da loja (w <= 0: nao coube).
+    int m_nViewX = 0;
+    int m_nViewY = 0;
+    int m_nViewW = 1;
+    int m_nViewH = 1;
 };

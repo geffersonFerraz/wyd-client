@@ -40,7 +40,6 @@ NewApp::NewApp()
 	m_pObjectManager = 0;
 	m_pSocketManager = 0;
 	g_pApp = this;
-	ShellExecute(0, "open", ChangeUpdate_Path, 0, 0, 1);
 	BASE_InitModuleDir();
 	BASE_InitializeHitRate();
 	BASE_ReadMessageBin();
@@ -74,6 +73,125 @@ NewApp::~NewApp()
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	return g_pApp->MsgProc(hWnd, message, wParam, lParam);
+}
+
+// Janela da pagina de registro do admin: o controle de navegador do Windows
+// (o mesmo do launcher) em uma janela sobre o jogo.
+static HWND s_hRegisterWnd = nullptr;
+static HWND s_hRegisterBrowser = nullptr;
+
+static LRESULT CALLBACK RegisterPageWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	if (uMsg == WM_SIZE && s_hRegisterBrowser != nullptr)
+		MoveWindow(s_hRegisterBrowser, 0, 0, LOWORD(lParam), HIWORD(lParam), TRUE);
+	else if (uMsg == WM_DESTROY)
+	{
+		s_hRegisterWnd = nullptr;
+		s_hRegisterBrowser = nullptr;
+	}
+	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+}
+
+// Mensagens da janela de registro nao passam pelos atalhos do jogo; as teclas
+// vao antes ao navegador, senao o Tab nao troca de campo.
+static bool RegisterPageHandlesMessage(MSG* pMsg)
+{
+	const UINT WM_FORWARDMSG_ATL = 0x037F;
+	if (s_hRegisterWnd == nullptr || (pMsg->hwnd != s_hRegisterWnd && !IsChild(s_hRegisterWnd, pMsg->hwnd)))
+		return false;
+
+	bool bKey = pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST;
+	if (!bKey || !SendMessageW(s_hRegisterBrowser, WM_FORWARDMSG_ATL, 0, reinterpret_cast<LPARAM>(pMsg)))
+	{
+		TranslateMessage(pMsg);
+		DispatchMessageW(pMsg);
+	}
+	return true;
+}
+
+static HWND CreateRegisterPageWindow(HWND hOwner, const char* szUrl)
+{
+	const int nClientWidth = 440;
+	const int nClientHeight = 520;
+	const DWORD dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN;
+
+	HMODULE hOle = LoadLibraryA("ole32.dll");
+	HMODULE hAtl = LoadLibraryA("atl.dll");
+	if (hOle == nullptr || hAtl == nullptr)
+		return nullptr;
+
+	typedef HRESULT(WINAPI* OleInitializeFn)(LPVOID);
+	typedef BOOL(WINAPI* AtlAxWinInitFn)();
+	auto pOleInitialize = reinterpret_cast<OleInitializeFn>(GetProcAddress(hOle, "OleInitialize"));
+	auto pAtlAxWinInit = reinterpret_cast<AtlAxWinInitFn>(GetProcAddress(hAtl, "AtlAxWinInit"));
+	if (pOleInitialize == nullptr || pAtlAxWinInit == nullptr)
+		return nullptr;
+
+	pOleInitialize(nullptr);
+	if (!pAtlAxWinInit())
+		return nullptr;
+
+	HINSTANCE hInstance = GetModuleHandleW(nullptr);
+	static bool s_bClassReady = false;
+	if (!s_bClassReady)
+	{
+		WNDCLASSEXW stClass{};
+		stClass.cbSize = sizeof(stClass);
+		stClass.lpfnWndProc = RegisterPageWndProc;
+		stClass.hInstance = hInstance;
+		stClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
+		stClass.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
+		stClass.lpszClassName = L"WYDRegisterPage";
+		if (!RegisterClassExW(&stClass))
+			return nullptr;
+		s_bClassReady = true;
+	}
+
+	wchar_t wszUrl[512]{};
+	if (!MultiByteToWideChar(CP_ACP, 0, szUrl, -1, wszUrl, 512))
+		return nullptr;
+
+	RECT stOwner{};
+	GetWindowRect(hOwner, &stOwner);
+	RECT stWindow{ 0, 0, nClientWidth, nClientHeight };
+	AdjustWindowRect(&stWindow, dwStyle, FALSE);
+	int nWidth = stWindow.right - stWindow.left;
+	int nHeight = stWindow.bottom - stWindow.top;
+	int nX = (stOwner.left + stOwner.right - nWidth) / 2;
+	int nY = (stOwner.top + stOwner.bottom - nHeight) / 2;
+
+	HWND hWnd = CreateWindowExW(0, L"WYDRegisterPage", L"Registro", dwStyle, nX, nY, nWidth, nHeight, hOwner, nullptr, hInstance, nullptr);
+	if (hWnd == nullptr)
+		return nullptr;
+
+	HWND hBrowser = CreateWindowExW(0, L"AtlAxWin", wszUrl, WS_CHILD | WS_VISIBLE, 0, 0, nClientWidth, nClientHeight, hWnd, nullptr, hInstance, nullptr);
+	if (hBrowser == nullptr)
+	{
+		DestroyWindow(hWnd);
+		return nullptr;
+	}
+
+	s_hRegisterBrowser = hBrowser;
+	ShowWindow(hWnd, SW_SHOW);
+	SetForegroundWindow(hWnd);
+	SetFocus(hBrowser);
+	return hWnd;
+}
+
+void NewApp::OpenRegisterPage(const char* szUrl)
+{
+	if (s_hRegisterWnd != nullptr)
+	{
+		SetForegroundWindow(s_hRegisterWnd);
+		return;
+	}
+
+	// Em tela cheia exclusiva nenhuma janela aparece sobre o Direct3D.
+	if (g_pDevice->m_bWindowed)
+		s_hRegisterWnd = CreateRegisterPageWindow(m_hWnd, szUrl);
+
+	if (s_hRegisterWnd == nullptr)
+		ShellExecuteA(m_hWnd, "open", szUrl, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
 HRESULT NewApp::Initialize(HINSTANCE hInstance, int nFull)
@@ -319,8 +437,6 @@ HRESULT NewApp::Initialize(HINSTANCE hInstance, int nFull)
 	memset(g_pItemHelp, 0, sizeof(g_pItemHelp));
 	char szItemHelpFile[128];
 	sprintf(szItemHelpFile, ItemHelp_Path);
-
-	remove(ChangeUpdate_Path);
 
 	MixHelp();
 
@@ -584,7 +700,10 @@ DWORD NewApp::Run()
 
 		if (bGotMsg == 1)
 		{
-			if (!hAccel || !m_hWnd || TranslateAccelerator(m_hWnd, hAccel, &msg) == 0)
+			if (RegisterPageHandlesMessage(&msg))
+			{
+			}
+			else if (!hAccel || !m_hWnd || TranslateAccelerator(m_hWnd, hAccel, &msg) == 0)
 			{
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);

@@ -168,9 +168,61 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 
 		// So a pagina dona da celula responde; as demais agem como um grid fora do cursor.
 		int nSlot = nView;
-		if (nSlot >= 0 && nSlot < ClassicPageSize() * 4 && nSlot / ClassicPageSize() == ClassicPage())
+		SGridControlItem* pCover = nullptr;
+		if (IsClassicShop())
 		{
-			int nInPage = nSlot % ClassicPageSize();
+			// O item pode ocupar varias celulas: qualquer uma delas leva a posicao real na loja.
+			LayoutClassicShop();
+			SGridControlItem* pHit = nullptr;
+			int nHitX = nView % ClassicColumns();
+			int nHitY = nView / ClassicColumns();
+			for (int i = 0; nView >= 0 && i < m_nNumItem; ++i)
+			{
+				auto pItem = m_pItemList[i];
+				if (pItem && pItem->m_nViewW > 0 &&
+					nHitX >= pItem->m_nViewX && nHitX < pItem->m_nViewX + pItem->m_nViewW &&
+					nHitY >= pItem->m_nViewY && nHitY < pItem->m_nViewY + pItem->m_nViewH)
+				{
+					pHit = pItem;
+					break;
+				}
+			}
+
+			if (pHit)
+			{
+				nCellX = pHit->m_nCellIndexX;
+				nCellY = pHit->m_nCellIndexY;
+			}
+			else
+			{
+				bPtInRect = 0;
+				nCellX = -1;
+				nCellY = -1;
+			}
+		}
+		else if (IsClassicCarry() && nView >= 0 &&
+			(pCover = ClassicItemAt(IsClassicCargo(), nView % ClassicColumns(), nView / ClassicColumns())) != nullptr)
+		{
+			// Celula coberta por um item maior: responde a pagina dona do item.
+			if (pCover->m_pGridControl == this)
+			{
+				nCellX = pCover->m_nCellIndexX;
+				nCellY = pCover->m_nCellIndexY;
+				if (IsClassicInv())
+					pFScene->m_pGridInv = this;
+				else
+					pFScene->m_pCargoGrid = this;
+			}
+			else
+			{
+				bPtInRect = 0;
+				nCellX = -1;
+				nCellY = -1;
+			}
+		}
+		else if (nSlot >= 0 && (IsClassicInv() ? CarryPage(nSlot) : nSlot / ClassicPageSize()) == ClassicPage())
+		{
+			int nInPage = nSlot - ClassicPage() * ClassicPageSize();
 			nCellX = nInPage % 5;
 			nCellY = nInPage / 5;
 			if (IsClassicInv())
@@ -321,10 +373,8 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 		if (bPtInRect && g_pCursor->GetStyle() == ECursorStyle::TMC_CURSOR_PICKUP &&
 			SGridControl::m_pLastAttachedItem && g_pCursor->m_pAttachedItem)
 		{
-			int page = pFScene->m_pGridInv->m_dwControlID - 67072;
-			if (page == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467)
-				return 0;
-			if (page == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)
+
+			if (IsClassicCarry() && !ClassicCanPlace(IsClassicCargo(), g_pCursor->m_pAttachedItem, ClassicPage() * ClassicPageSize() + nCellY * 5 + nCellX))
 				return 0;
 
 			SwapItem(nCellX, nCellY, nCellVWidth, nCellVHeight, &dst);
@@ -438,11 +488,6 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 	else if (!bClick && dwFlags == 517 && bPtInRect && g_pCursor->GetStyle() == ECursorStyle::TMC_CURSOR_HAND &&
 		(m_eGridType == TMEGRIDTYPE::GRID_CARGO || m_eGridType == TMEGRIDTYPE::GRID_DEFAULT))
 	{
-		int page = m_dwControlID - 67072;
-		if (page == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467)
-			return 0;
-		if (page == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)
-			return 0;
 
 		if (!pFScene || !pFScene->m_pMyHuman)
 			return 0;
@@ -540,10 +585,6 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 					if (sDestType)
 					{
 						int page = m_dwControlID - 67072;
-						if (page == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467)
-							return 0;
-						if (page == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)
-							return 0;
 						stSwapItem.DestPos = 15 * page + nAX + 5 * nAY;
 					}
 					else
@@ -594,10 +635,6 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 					return 0;
 				if (SourPage < 0 || SourPage > 45)
 					SourPage = 0;
-				if (SourPage / 15 == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467)
-					return 0;
-				if (SourPage / 15 == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)
-					return 0;
 
 				MSG_SwapItem Msg{};
 				Msg.Header.ID = g_pObjectManager->m_dwCharID;
@@ -631,30 +668,60 @@ void SGridControl::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int 
 	{
 		ConsolePainelMacro(7);
 	}
-	if (IsClassicList())
+	if (IsClassicShop())
+		LayoutClassicShop();
+
+	// Item no cursor: mostra onde ele cairia, verde se couber e vermelho se nao.
+	auto pHeld = g_pCursor->m_pAttachedItem;
+	if (pHeld && pHeld->m_pItem && IsClassicCarry() && ClassicPage() == 0)
 	{
-		// A arte antiga ja traz a grade desenhada; so escurece as paginas sem bolsa.
-		int nPage = ClassicPage();
-		if (IsClassicInv() &&
-			((nPage == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467) ||
-			(nPage == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)))
+		float fGridX = ivParentPos.x + m_nPosX;
+		float fGridY = ivParentPos.y + m_nPosY;
+		float fCellW = m_nWidth / (float)ClassicColumns();
+		float fCellH = m_nHeight / (float)ClassicRows();
+		int nViewX = (int)floorf(((float)g_pCursor->m_nPosX - fGridX) / fCellW);
+		int nViewY = (int)floorf(((float)g_pCursor->m_nPosY - fGridY) / fCellH);
+		if (nViewX >= 0 && nViewX < ClassicColumns() && nViewY >= 0 && nViewY < ClassicRows())
 		{
-			for (int nCell = 0; nCell < 15; ++nCell)
-			{
-				int nView = nPage * 15 + nCell;
-				GeomControl* pCell = &m_GCGrid[nCell];
-				pCell->nTextureSetIndex = -2;
-				pCell->dwColor = 0x99000000;
-				pCell->nWidth = m_nWidth / 9.0f;
-				pCell->nHeight = m_nHeight / 7.0f;
-				pCell->nPosX = (ivParentPos.x + m_nPosX) + (float)(nView % 9) * pCell->nWidth;
-				pCell->nPosY = (ivParentPos.y + m_nPosY) + (float)(nView / 9) * pCell->nHeight;
-				pCell->nLayer = inParentLayer;
-				AddRenderControlItem(pDrawList, pCell, inParentLayer);
-			}
+			int nWidth = 1;
+			int nHeight = 1;
+			ClassicItemSize(pHeld->m_pItem->sIndex, nWidth, nHeight);
+			bool bFits = ClassicCanPlace(IsClassicCargo(), pHeld, nViewY * ClassicColumns() + nViewX);
+			nWidth = nWidth < ClassicColumns() - nViewX ? nWidth : ClassicColumns() - nViewX;
+			nHeight = nHeight < ClassicRows() - nViewY ? nHeight : ClassicRows() - nViewY;
+
+			m_GCEnable.nPosX = fGridX + (float)nViewX * fCellW;
+			m_GCEnable.nPosY = fGridY + (float)nViewY * fCellH;
+			m_GCEnable.nWidth = (float)nWidth * fCellW;
+			m_GCEnable.nHeight = (float)nHeight * fCellH;
+			m_GCEnable.nLayer = inParentLayer;
+			m_GCEnable.dwColor = bFits ? 0x4400C040 : 0x66FF6060;
+			AddRenderControlItem(pDrawList, &m_GCEnable, inParentLayer);
 		}
 	}
-	else if (m_bDrawGrid == 1)
+
+	// Slot de equipamento: acende so onde o item pode ser equipado.
+	if (pHeld && pHeld->m_pItem && m_eItemType != TMEITEMTYPE::ITEMTYPE_NONE)
+	{
+		float fSlotX = ivParentPos.x + m_nPosX;
+		float fSlotY = ivParentPos.y + m_nPosY;
+		float fMouseX = (float)g_pCursor->m_nPosX;
+		float fMouseY = (float)g_pCursor->m_nPosY;
+		bool bInside = fMouseX >= fSlotX && fMouseX < fSlotX + m_nWidth && fMouseY >= fSlotY && fMouseY < fSlotY + m_nHeight;
+		bool bAccepts = CanChangeItem(pHeld, 0, 0, 1) != 0;
+		if (bAccepts || bInside)
+		{
+			m_GCEnable.nPosX = fSlotX;
+			m_GCEnable.nPosY = fSlotY;
+			m_GCEnable.nWidth = m_nWidth;
+			m_GCEnable.nHeight = m_nHeight;
+			m_GCEnable.nLayer = inParentLayer;
+			m_GCEnable.dwColor = bAccepts ? 0x4400C040 : 0x66FF6060;
+			AddRenderControlItem(pDrawList, &m_GCEnable, inParentLayer);
+		}
+	}
+
+	if (!IsClassicList() && m_bDrawGrid == 1)
 	{
 		for (int nY = 0; nY < m_nRowGridCount; ++nY)
 		{
@@ -766,6 +833,15 @@ void SGridControl::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int 
 
 			vecPos.x = (ivParentPos.x + m_nPosX) + (float)(nView % ClassicColumns()) * (m_nWidth / (float)ClassicColumns());
 			vecPos.y = (ivParentPos.y + m_nPosY) + (float)(nView / ClassicColumns()) * (m_nHeight / (float)ClassicRows());
+
+			if (IsClassicShop())
+			{
+				if (pGridCurrent->m_nViewW <= 0)
+					continue;
+
+				vecPos.x = (ivParentPos.x + m_nPosX) + (float)pGridCurrent->m_nViewX * (m_nWidth / (float)ClassicColumns());
+				vecPos.y = (ivParentPos.y + m_nPosY) + (float)pGridCurrent->m_nViewY * (m_nHeight / (float)ClassicRows());
+			}
 		}
 
 
@@ -811,40 +887,47 @@ void SGridControl::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int 
 
 
 
-		pGridCurrent->FrameMove2(pDrawList, vecPos, inParentLayer, 0);
+		// Item selecionado: as celulas dele ganham fundo verde, desenhado antes do item.
+		bool bTradeGrid = m_eGridType == TMEGRIDTYPE::GRID_TRADEOP ||
+			m_eGridType == TMEGRIDTYPE::GRID_TRADEMY || m_eGridType == TMEGRIDTYPE::GRID_TRADEMY2;
+		// Passar o mouse nao pinta nada: item na mao usa a sombra que segue o cursor.
+		if (m_dwControlID != 6200011 && pGridCurrent->m_pItem && IsSkill(pGridCurrent->m_pItem->sIndex) != 1 &&
+			pGridCurrent != g_pCursor->m_pAttachedItem &&
+			(bTradeGrid || pGridCurrent->m_GCObj.dwColor == 0xFFFF0000))		{
+			float fWidth = m_nWidth / (float)m_nColumnGridCount;
+			float fHeight = m_nHeight / (float)m_nRowGridCount;
+			int nCellsX = pGridCurrent->m_nCellWidth < m_nColumnGridCount ? pGridCurrent->m_nCellWidth : m_nColumnGridCount;
+			int nCellsY = pGridCurrent->m_nCellHeight < m_nRowGridCount ? pGridCurrent->m_nCellHeight : m_nRowGridCount;
 
+			if (IsClassicList())
+			{
+				if (IsClassicCarry())
+					ClassicItemSize(pGridCurrent->m_pItem->sIndex, pGridCurrent->m_nViewW, pGridCurrent->m_nViewH);
 
+				fWidth = m_nWidth / (float)ClassicColumns();
+				fHeight = m_nHeight / (float)ClassicRows();
+				nCellsX = pGridCurrent->m_nViewW;
+				nCellsY = pGridCurrent->m_nViewH;
+			}
+			else if (m_eItemType != TMEITEMTYPE::ITEMTYPE_NONE)
+			{
+				// Slot de equipamento: o fundo cobre o slot inteiro.
+				fWidth = m_nWidth;
+				fHeight = m_nHeight;
+				nCellsX = 1;
+				nCellsY = 1;
+			}
 
-
-		if (pGridCurrent->m_GCObj.dwColor != 0xFFFF0000)
-			continue;
-
-		pGridCurrent->m_GCEnable.nPosX = (ivParentPos.x + m_nPosX) + (float)((float)pGridCurrent->m_nCellIndexX * BASE_ScreenResize(m_GCGrid->nWidth));
-		pGridCurrent->m_GCEnable.nPosY = (ivParentPos.y + m_nPosY) + (float)((float)pGridCurrent->m_nCellIndexY * BASE_ScreenResize(m_GCGrid->nHeight));
-
-		if (m_bDrawGrid)
-		{
-			pGridCurrent->m_GCEnable.nWidth = BASE_ScreenResize((float)(SControl::m_nGridCellSize * pGridCurrent->m_nCellWidth));
-			pGridCurrent->m_GCEnable.nHeight = BASE_ScreenResize((float)(SControl::m_nGridCellSize * pGridCurrent->m_nCellHeight));
-		}
-		else
-		{
-			pGridCurrent->m_GCEnable.nWidth = (float)(SControl::m_nGridCellSize * pGridCurrent->m_nCellWidth);
-			pGridCurrent->m_GCEnable.nHeight = (float)(SControl::m_nGridCellSize * pGridCurrent->m_nCellHeight);
-		}
-
-		if (IsClassicList())
-		{
 			pGridCurrent->m_GCEnable.nPosX = vecPos.x;
 			pGridCurrent->m_GCEnable.nPosY = vecPos.y;
-			pGridCurrent->m_GCEnable.nWidth = m_nWidth / (float)ClassicColumns();
-			pGridCurrent->m_GCEnable.nHeight = m_nHeight / (float)ClassicRows();
+			pGridCurrent->m_GCEnable.nWidth = fWidth * (float)nCellsX;
+			pGridCurrent->m_GCEnable.nHeight = fHeight * (float)nCellsY;
+			pGridCurrent->m_GCEnable.nLayer = inParentLayer;
+			pGridCurrent->m_GCEnable.dwColor = 0x4400C040;
+			AddRenderControlItem(pDrawList, &pGridCurrent->m_GCEnable, inParentLayer);
 		}
 
-		pGridCurrent->m_GCEnable.nLayer = inParentLayer;
-		pGridCurrent->m_GCEnable.dwColor = 0x33FF0000;
-		AddRenderControlItem(pDrawList, &pGridCurrent->m_GCEnable, inParentLayer);
-	}
+		pGridCurrent->FrameMove2(pDrawList, vecPos, inParentLayer, 0);	}
 }
 
 int SGridControl::CanItAdd(int* bFilledBuffer, int inCellIndexX, int inCellIndexY, int inCellWidth, int inCellHeight)
@@ -986,7 +1069,7 @@ IVector2 SGridControl::CanAddItemInEmpty(int nWidth, int nHeight)
 		{
 			// Slots do bau que nao cabem na grade antiga nao recebem item automaticamente.
 			int nView = 0;
-			if (IsClassicCargo() && !GetClassicView(nX, nY, nView))
+			if (IsClassicCarry() && !GetClassicView(nX, nY, nView))
 				continue;
 
 			if (CanItAdd(m_pbFilled, nX, nY, nWidth, nHeight) == 1)
@@ -2009,9 +2092,9 @@ int SGridControl::TradeItem(int nCellX, int nCellY)
 			if (pGridMyItem[i] != this)
 				continue;
 
-			int Page = g_pObjectManager->m_stCombineItem.CarryPos[i] / 15;
-			int CellIndexX = g_pObjectManager->m_stCombineItem.CarryPos[i] % 15 % 5;
-			int CellIndexY = g_pObjectManager->m_stCombineItem.CarryPos[i] % 15 / 5;
+			int Page = CarryPage(g_pObjectManager->m_stCombineItem.CarryPos[i]);
+			int CellIndexX = CarryCellX(g_pObjectManager->m_stCombineItem.CarryPos[i]);
+			int CellIndexY = CarryCellY(g_pObjectManager->m_stCombineItem.CarryPos[i]);
 
 			auto pPickupItem = pGridMyItem[i]->PickupItem(0, 0);
 			auto pControlInv = pFScene->m_pGridInvList[Page];
@@ -2045,9 +2128,9 @@ int SGridControl::TradeItem(int nCellX, int nCellY)
 			if (pGridMyItem[i] != this)
 				continue;
 
-			int Page = g_pObjectManager->m_stCombineItem4.CarryPos[i] / 15;
-			int CellIndexX = g_pObjectManager->m_stCombineItem4.CarryPos[i] % 15 % 5;
-			int CellIndexY = g_pObjectManager->m_stCombineItem4.CarryPos[i] % 15 / 5;
+			int Page = CarryPage(g_pObjectManager->m_stCombineItem4.CarryPos[i]);
+			int CellIndexX = CarryCellX(g_pObjectManager->m_stCombineItem4.CarryPos[i]);
+			int CellIndexY = CarryCellY(g_pObjectManager->m_stCombineItem4.CarryPos[i]);
 
 			auto pPickupItem = pGridMyItem[i]->PickupItem(0, 0);
 			auto pControlInv = pFScene->m_pGridInvList[Page];
@@ -2543,10 +2626,6 @@ int SGridControl::SellItem(int nCellX, int nCellY, unsigned int dwFlags, unsigne
 					sDestpage = 0;
 			}
 
-			if (Sourpage / 15 == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467)
-				return 1;
-			if (Sourpage / 15 == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)
-				return 1;
 
 			MSG_UseItem stUseItem{};
 
@@ -2610,11 +2689,6 @@ int SGridControl::SellItem(int nCellX, int nCellY, unsigned int dwFlags, unsigne
 		}
 		else if (CanChangeItem(g_pCursor->m_pAttachedItem, nCellX, nCellY, 0))
 		{
-			int page = m_dwControlID - 67072;
-			if (page == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467)
-				return 0;
-			if (page == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)
-				return 0;
 
 			SGridControl::m_pLastAttachedItem = g_pCursor->m_pAttachedItem;
 
@@ -2837,9 +2911,6 @@ void SGridControl::SwapItem(int nCellX, int nCellY, int nCellVWidth, int nCellVH
 
 	auto pFScene = static_cast<TMFieldScene*>(g_pCurrentScene);
 
-	int page = pFScene->m_pGridInv->m_dwControlID - 67072;
-	if ((page != 2 || g_pObjectManager->m_stMobData.Carry[60].sIndex == 3467) &&
-		(page != 3 || g_pObjectManager->m_stMobData.Carry[61].sIndex == 3467))
 	{
 		if (m_eItemType == TMEITEMTYPE::ITEMTYPE_NONE)
 		{
@@ -5024,12 +5095,9 @@ void SGridControl::RButton(int nCellX, int nCellY, int bPtInRect)
 	if (g_pCursor->GetStyle() == ECursorStyle::TMC_CURSOR_HAND && m_eItemType == TMEITEMTYPE::ITEMTYPE_NONE &&
 		(m_eGridType == TMEGRIDTYPE::GRID_DEFAULT || m_eGridType == TMEGRIDTYPE::GRID_SELL))
 	{
-		int page = pFScene->m_pGridInv->m_dwControlID - 67072;
 		unsigned int dwServerTime = g_pTimerManager->GetServerTime();
 
-		if ((pFScene->m_dwUseItemTime && dwServerTime - pFScene->m_dwUseItemTime < 200) ||
-			(page == 2 && g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467) ||
-			(page == 3 && g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467))
+		if (pFScene->m_dwUseItemTime && dwServerTime - pFScene->m_dwUseItemTime < 200)
 			return;
 
 		if (!bPtInRect)
@@ -5130,50 +5198,6 @@ void SGridControl::RButton(int nCellX, int nCellY, int bPtInRect)
 					memset(&g_pObjectManager->m_stMobData.Carry[SourPos], 0, sizeof(STRUCT_ITEM));
 
 				pFScene->m_dwUseItemTime = dwServerTime;
-			}
-			return;
-		}
-		if (nItemSIndex == 3467)
-		{
-			int Page = 15 * (pItem->m_pGridControl->m_dwControlID - 67072);
-			if (Page < 0 || Page > 45)
-				Page = 0;
-
-			if (pMyHuman->m_cCancel != 1 &&
-				(!pFScene->m_dwUseItemTime || dwServerTime - pFScene->m_dwUseItemTime >= 200))
-			{
-				short SourType = CheckType(pItem->m_pGridControl->m_eItemType,
-					pItem->m_pGridControl->m_eGridType);
-				short SourPos = CheckPos(pItem->m_pGridControl->m_eItemType);
-				if (SourPos == -1)
-					SourPos = pItem->m_nCellIndexX + 5 * pItem->m_nCellIndexY;
-
-				SourPos = Page + SourPos;
-
-				auto vec = pMyHuman->m_vecPosition;
-
-				MSG_UseItem stUseItem{};
-				stUseItem.Header.ID = g_pObjectManager->m_dwCharID;
-				stUseItem.Header.Type = MSG_UseItem_Opcode;
-				stUseItem.SourType = 1;
-				stUseItem.SourPos = SourPos;
-				stUseItem.ItemID = 0;
-				stUseItem.GridX = (int)vec.x;
-				stUseItem.GridY = (int)vec.y;
-				SendOneMessage((char*)&stUseItem, sizeof(stUseItem));
-
-				pFScene->m_dwUseItemTime = dwServerTime;
-
-				if (g_pObjectManager->m_stMobData.Carry[60].sIndex != 3467 ||
-					g_pObjectManager->m_stMobData.Carry[61].sIndex != 3467)
-				{
-					MSG_STANDARDPARM2 stDeleteItem{};
-					stDeleteItem.Header.ID = g_pCurrentScene->m_pMyHuman->m_dwID;
-					stDeleteItem.Header.Type = MSG_DeleteItem_Opcode;
-					stDeleteItem.Parm1 = SourPos;
-					stDeleteItem.Parm2 = 3467;
-					SendOneMessage((char*)&stDeleteItem, 20);
-				}
 			}
 			return;
 		}
@@ -5702,14 +5726,15 @@ char SGridControl::automove(int nCellX, int nCellY)
 				page = 0;
 		}
 
-		if (vecGrid.x == -1)
+		int nFit = ClassicFirstFit(Type == 2, pItem);
+		if (nFit < 0)
 			return 0;
 
 		MSG_SwapItem stSwapItem{};
 		stSwapItem.Header.ID = g_pObjectManager->m_dwCharID;
 		stSwapItem.Header.Type = MSG_SwapItem_Opcode;
 		stSwapItem.SourType = Type;
-		stSwapItem.SourPos = page + vecGrid.x + 5 * vecGrid.y;
+		stSwapItem.SourPos = nFit;
 		stSwapItem.DestType = static_cast<char>(sDestType);
 		stSwapItem.DestPos = static_cast<char>(sDestPos);
 		stSwapItem.TargetID = TMFieldScene::m_dwCargoID;
@@ -6164,6 +6189,15 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 			{
 				fSlotWidth = m_pGridControl->m_nWidth / (float)m_pGridControl->ClassicColumns();
 				fSlotHeight = m_pGridControl->m_nHeight / (float)m_pGridControl->ClassicRows();
+
+				if (m_pGridControl->IsClassicCarry() && m_pItem)
+					SGridControl::ClassicItemSize(m_pItem->sIndex, m_nViewW, m_nViewH);
+
+				if (m_pGridControl->IsClassicList())
+				{
+					fSlotWidth *= (float)m_nViewW;
+					fSlotHeight *= (float)m_nViewH;
+				}
 			}
 			else
 			{
@@ -6205,6 +6239,12 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 				nCellsY = nCellsY < nRows ? nCellsY : nRows;
 			}
 
+			// Gira so enquanto esta na mao ou com o mouse realmente sobre o item.
+			float fHoverX = (float)g_pCursor->m_nPosX - m_GCObj.nPosX;
+			float fHoverY = (float)g_pCursor->m_nPosY - m_GCObj.nPosY;
+			bool bSpin = this == g_pCursor->m_pAttachedItem ||
+				(fHoverX >= 0.0f && fHoverX < fCellWidth * (float)nCellsX && fHoverY >= 0.0f && fHoverY < fCellHeight * (float)nCellsY);
+
 			// Ajusta pelo tamanho real do modelo; ao girar, X e Y se alternam na tela.
 			TMMesh* pMesh = g_pMeshManager->GetCommonMesh(m_GCObj.n3DObjIndex, 0, 180000);
 			if (pMesh)
@@ -6212,24 +6252,26 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 				float fHalfX = (pMesh->m_fMaxX - pMesh->m_fMinX) * 0.5f;
 				float fHalfY = (pMesh->m_fMaxY - pMesh->m_fMinY) * 0.5f;
 				float fHalfZ = (pMesh->m_fMaxZ - pMesh->m_fMinZ) * 0.5f;
-				float fHalf = fHalfX > fHalfY ? fHalfX : fHalfY;
-				fHalf = fHalf > fHalfZ ? fHalf : fHalfZ;
+				float fHalfWide = fHalfX > fHalfY ? fHalfX : fHalfY;
+				float fHalfTall = fHalfZ > 0.05f ? fHalfZ : fHalfWide;
 
 				float fSlotX = fCellWidth * (float)nCellsX;
 				float fSlotY = fCellHeight * (float)nCellsY;
-				float fSlot = fSlotX < fSlotY ? fSlotX : fSlotY;
 
 				// 0.52 e 0.9 vem de RenderForUI/RenderGeomControl; 5.004 e a altura visivel da UI.
 				float fPixelsPerUnit = 0.52f * BASE_ScreenResize(0.9f / RenderDevice::m_fWidthRatio)
 					* ((float)g_pDevice->m_viewport.Height / 5.004f);
 
-				if (fHalf > 0.0001f && fPixelsPerUnit > 0.0001f)
+				if (fHalfWide > 0.0001f && fHalfTall > 0.0001f && fPixelsPerUnit > 0.0001f)
 				{
-					float fFit = (0.42f * fSlot) / (fHalf * fPixelsPerUnit);
-					m_GCObj.fScale = fFit > 1.6f ? 1.6f : fFit;
+					float fFitX = (0.42f * fSlotX) / (fHalfWide * fPixelsPerUnit);
+					float fFitY = (0.42f * fSlotY) / (fHalfTall * fPixelsPerUnit);
+					float fFit = fFitX < fFitY ? fFitX : fFitY;
+					float fMaxFit = (m_nViewW * m_nViewH > 1) ? 2.6f : 1.6f;
+					m_GCObj.fScale = fFit > fMaxFit ? fMaxFit : fFit;
 
 					// Inspecao: o item sob o cursor ou selecionado cresce um pouco.
-					if (m_bOver == 1 || m_bSelect == 1)
+					if (bSpin)
 						m_GCObj.fScale *= 1.25f;
 				}
 			}
@@ -6241,7 +6283,7 @@ void SGridControlItem::FrameMove2(stGeomList* pDrawList, TMVector2 ivItemPos, in
 			m_GCObj.nPosX = fLeft + (fCellWidth * (float)nCellsX) / 2.0f;
 			m_GCObj.nPosY = fTop + (fCellHeight * (float)nCellsY) / 2.0f;
 			m_GCObj.fAngle = 0.0f;
-			if (m_bOver == 1 || m_bSelect == 1)
+			if (bSpin)
 				m_GCObj.fAngle = ((float)(g_pTimerManager->GetServerTime() % 3000) * 6.28f) / 3000.0f;
 
 			AddRenderControlItem(pDrawList, &m_GCObj, inParentLayer);
@@ -6276,6 +6318,184 @@ int SGridControlItem::PtAtItem(int inPosX, int inPosY)
 void SGridControl::SetVisible(int bVisible)
 {
 	SPanel::SetVisible(IsClassicList() ? 1 : bVisible);
+}
+
+// Tamanho original de cada item (indice em g_pItemGridXY), extraido do ItemList do 7.543.
+static const unsigned char* GetClassicItemGrid()
+{
+	static unsigned char s_ucGrid[6500]{};
+	static bool s_bLoaded = false;
+	if (!s_bLoaded)
+	{
+		s_bLoaded = true;
+		FILE* fp = nullptr;
+		fopen_s(&fp, "UI\\ItemGrid.bin", "rb");
+		if (fp)
+		{
+			fread(s_ucGrid, 1, sizeof(s_ucGrid), fp);
+			fclose(fp);
+		}
+	}
+	return s_ucGrid;
+}
+
+void SGridControl::ClassicItemSize(int nItemIndex, int& nWidth, int& nHeight)
+{
+	int nSize = nItemIndex >= 0 && nItemIndex < 6500 ? GetClassicItemGrid()[nItemIndex] : 0;
+	if (nSize > 7)
+		nSize = 0;
+	nWidth = g_pItemGridXY[nSize][0];
+	nHeight = g_pItemGridXY[nSize][1];
+}
+
+// Item que cobre a celula; o que comeca nela tem prioridade.
+SGridControlItem* SGridControl::ClassicItemAt(bool bCargo, int nViewX, int nViewY)
+{
+	auto pScene = static_cast<TMFieldScene*>(g_pCurrentScene);
+	int nPageSize = bCargo ? 40 : 15;
+	SGridControlItem* pFound = nullptr;
+	for (int nPage = 0; nPage < 4; ++nPage)
+	{
+		SGridControl* pGrid = bCargo ? pScene->m_pCargoGridList[nPage] : pScene->m_pGridInvList[nPage];
+		for (int i = 0; pGrid && i < pGrid->m_nNumItem; ++i)
+		{
+			auto pItem = pGrid->m_pItemList[i];
+			if (!pItem || !pItem->m_pItem || pItem == g_pCursor->m_pAttachedItem)
+				continue;
+
+			int nSlot = nPage * nPageSize + pItem->m_nCellIndexY * 5 + pItem->m_nCellIndexX;
+			int nItemX = nSlot % 9;
+			int nItemY = nSlot / 9;
+			int nWidth = 1;
+			int nHeight = 1;
+			ClassicItemSize(pItem->m_pItem->sIndex, nWidth, nHeight);
+			if (nViewX == nItemX && nViewY == nItemY)
+				return pItem;
+			if (!pFound && nViewX >= nItemX && nViewX < nItemX + nWidth && nViewY >= nItemY && nViewY < nItemY + nHeight)
+				pFound = pItem;
+		}
+	}
+	return pFound;
+}
+
+// Mesma regra do servidor: cabe na grade e nao cobre outro item.
+bool SGridControl::ClassicCanPlace(bool bCargo, SGridControlItem* pMoving, int nSlot)
+{
+	int nRows = bCargo ? 14 : 7;
+	if (!pMoving || !pMoving->m_pItem || nSlot < 0 || nSlot >= nRows * 9)
+		return false;
+
+	int nWidth = 1;
+	int nHeight = 1;
+	ClassicItemSize(pMoving->m_pItem->sIndex, nWidth, nHeight);
+	int nX = nSlot % 9;
+	int nY = nSlot / 9;
+	if (nX + nWidth > 9 || nY + nHeight > nRows)
+		return false;
+
+	SGridControlItem* pSwap = ClassicItemAt(bCargo, nX, nY);
+	if (pSwap)
+	{
+		int nSwapPage = (int)pSwap->m_pGridControl->m_dwControlID - (bCargo ? 67328 : 67072);
+		if (nSwapPage * (bCargo ? 40 : 15) + pSwap->m_nCellIndexY * 5 + pSwap->m_nCellIndexX != nSlot)
+			pSwap = nullptr;
+	}
+
+	for (int y = nY; y < nY + nHeight; ++y)
+	{
+		for (int x = nX; x < nX + nWidth; ++x)
+		{
+			auto pOther = ClassicItemAt(bCargo, x, y);
+			if (pOther && pOther != pSwap)
+				return false;
+		}
+	}
+	return true;
+}
+
+// Primeira celula livre onde o item cabe, ou -1.
+int SGridControl::ClassicFirstFit(bool bCargo, SGridControlItem* pMoving)
+{
+	int nRows = bCargo ? 14 : 7;
+	for (int nSlot = 0; nSlot < nRows * 9; ++nSlot)
+	{
+		if (!ClassicItemAt(bCargo, nSlot % 9, nSlot / 9) && ClassicCanPlace(bCargo, pMoving, nSlot))
+			return nSlot;
+	}
+	return -1;
+}
+
+// Arruma os itens da loja na grade antiga, na ordem da loja, respeitando o tamanho de cada um.
+// Afeta so a exibicao: a compra continua usando a posicao interna do item.
+void SGridControl::LayoutClassicShop()
+{
+	const int nColumns = ClassicColumns();
+	const int nRows = ClassicRows();
+	bool bUsed[14][9]{};
+
+	SGridControlItem* pOrder[64]{};
+	int nCount = 0;
+	for (int i = 0; i < m_nNumItem && nCount < 64; ++i)
+	{
+		auto pItem = m_pItemList[i];
+		if (!pItem)
+			continue;
+
+		int nKey = pItem->m_nCellIndexY * 5 + pItem->m_nCellIndexX;
+		int nInsert = nCount++;
+		while (nInsert > 0 && pOrder[nInsert - 1]->m_nCellIndexY * 5 + pOrder[nInsert - 1]->m_nCellIndexX > nKey)
+		{
+			pOrder[nInsert] = pOrder[nInsert - 1];
+			--nInsert;
+		}
+		pOrder[nInsert] = pItem;
+	}
+
+	auto TryPlace = [&](SGridControlItem* pItem, int nW, int nH) -> bool
+	{
+		for (int nY = 0; nY + nH <= nRows; ++nY)
+		{
+			for (int nX = 0; nX + nW <= nColumns; ++nX)
+			{
+				bool bFree = true;
+				for (int y = nY; bFree && y < nY + nH; ++y)
+					for (int x = nX; x < nX + nW; ++x)
+						if (bUsed[y][x])
+						{
+							bFree = false;
+							break;
+						}
+
+				if (!bFree)
+					continue;
+
+				for (int y = nY; y < nY + nH; ++y)
+					for (int x = nX; x < nX + nW; ++x)
+						bUsed[y][x] = true;
+
+				pItem->m_nViewX = nX;
+				pItem->m_nViewY = nY;
+				pItem->m_nViewW = nW;
+				pItem->m_nViewH = nH;
+				return true;
+			}
+		}
+		return false;
+	};
+
+	const unsigned char* pGrid = GetClassicItemGrid();
+	for (int i = 0; i < nCount; ++i)
+	{
+		auto pItem = pOrder[i];
+		int nSize = 0;
+		if (pItem->m_pItem && pItem->m_pItem->sIndex >= 0 && pItem->m_pItem->sIndex < 6500)
+			nSize = pGrid[pItem->m_pItem->sIndex];
+		if (nSize > 7)
+			nSize = 0;
+
+		if (!TryPlace(pItem, g_pItemGridXY[nSize][0], g_pItemGridXY[nSize][1]) && !TryPlace(pItem, 1, 1))
+			pItem->m_nViewW = 0;
+	}
 }
 
 bool SGridControl::GetClassicView(int nCellX, int nCellY, int& nView) const

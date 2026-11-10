@@ -107,9 +107,11 @@ TMSelectServerScene::~TMSelectServerScene()
 	Game_grade = 0;
 }
 
+static constexpr unsigned int B_REGISTER = 2299960;
+
 int TMSelectServerScene::InitializeScene()
 {
-	LoadRC("UI\\SelServerScene2.txt");
+	LoadRC("UI\\SelServerScene543.txt");
 	_SYSTEMTIME time{};
 	GetLocalTime(&time);
 	g_pCursor->SetVisible(0);
@@ -191,7 +193,8 @@ int TMSelectServerScene::InitializeScene()
 		m_pLogoPanels[1]->SetPos(static_cast<float>(g_pDevice->m_dwScreenWidth) * 0.5f, 10.0f * RenderDevice::m_fHeightRatio + static_cast<float>(nAddHeight));
 	}
 	auto logofront = static_cast<SPanel*>(m_pControlContainer->FindControl(516)); 
-	logofront->SetSize(static_cast<float>(g_pDevice->m_dwScreenWidth), static_cast<float>(g_pDevice->m_dwScreenHeight));
+	if (logofront)
+		logofront->SetSize(static_cast<float>(g_pDevice->m_dwScreenWidth), static_cast<float>(g_pDevice->m_dwScreenHeight));
 	m_pEditID = static_cast<SEditableText*>(m_pControlContainer->FindControl(E_LOGIN_ID));
 	m_pEditPW = static_cast<SEditableText*>(m_pControlContainer->FindControl(E_LOGIN_PASSWORD));
 
@@ -241,7 +244,8 @@ int TMSelectServerScene::InitializeScene()
 		}
 	}
 	auto TextReconexao = static_cast<SText*>(m_pControlContainer->FindControl(2131093));
-	TextReconexao->SetVisible(1);
+	if (TextReconexao)
+		TextReconexao->SetVisible(1);
 
 	//std::cout << "\n status " << pReconectData.ReconectStatus;
 
@@ -313,7 +317,8 @@ int TMSelectServerScene::InitializeScene()
 	sprintf_s(szMapPath, "env\\Field1616.trn");
 	sprintf_s(szDataPath, "env\\Field1616.dat");
 
-	m_nDemoType = 4;
+	// Como no 7.543: a cena da abertura muda conforme o minuto (1 a 3).
+	m_nDemoType = time.wMinute % 3 + 1;
 	if (m_nDemoType)
 	{
 		switch (m_nDemoType)
@@ -1002,7 +1007,8 @@ int TMSelectServerScene::OnControlEvent(unsigned int idwControlID, unsigned int 
 			m_pLoginBtns[i]->SetVisible(1);
 
 		m_pLoginPanel->SetVisible(1);
-		TextReconexao->SetVisible(1);
+		if (TextReconexao)
+			TextReconexao->SetVisible(1);
 		m_pControlContainer->SetFocusedControl(m_pEditID);
 		/*m_pEditID->SetText((char*)"asdf");
 		m_pEditPW->SetText((char*)"asdf"); */
@@ -1246,6 +1252,27 @@ int TMSelectServerScene::OnControlEvent(unsigned int idwControlID, unsigned int 
 		OnControlEvent(2299942, 0); 
 
 	} break;
+
+	case B_REGISTER:
+	{
+		// A pagina fica no mesmo host publico do servNN.htm do serverlist.bin.
+		int nGroup = g_pObjectManager->m_nServerGroupIndex - 1;
+		if (nGroup < 0 || nGroup >= MAX_SERVERGROUP || !g_pServerList[nGroup][0][0])
+			nGroup = 0;
+
+		char szUrl[256]{};
+		strncpy_s(szUrl, g_pServerList[nGroup][0], _TRUNCATE);
+		char* pSlash = strrchr(szUrl, '/');
+		if (strncmp(szUrl, "http", 4) != 0 || pSlash == nullptr)
+		{
+			m_pMessagePanel->SetMessage("Registro indisponivel.", 4000);
+			m_pMessagePanel->SetVisible(1, 1);
+			return 1;
+		}
+		strcpy_s(pSlash + 1, sizeof(szUrl) - (pSlash + 1 - szUrl), "registro");
+		g_pApp->OpenRegisterPage(szUrl);
+	}
+	break;
 
 	case B_QUIT:
 		m_pMessageBox->SetMessage(g_pMessageStringTable[11], B_QUIT, nullptr);

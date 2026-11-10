@@ -3680,6 +3680,11 @@ void DisableSysKey();
 
 /* Other funtions */
 int IsSkill(int nSkillIndex);
+
+// O inventario tem 4 paginas de 15; a ultima tambem guarda os slots 60 a 62.
+inline int CarryPage(int nSlot) { int nPage = nSlot / 15; return nPage > 3 ? 3 : nPage; }
+inline int CarryCellX(int nSlot) { return (nSlot - 15 * CarryPage(nSlot)) % 5; }
+inline int CarryCellY(int nSlot) { return (nSlot - 15 * CarryPage(nSlot)) / 5; }
 int GetSkillIndex(int nSkillIndex);
 int IsValidSkill(int nSkillIndex);
 int IsValidClassSkill(int nSkillIndex); 

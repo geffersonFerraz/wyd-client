@@ -14,7 +14,6 @@ const char* BASE_GuildMarkURL();
 
 /* File related defines */
 constexpr const char* LogFile_Path = "clientlogs.log";
-constexpr const char* ChangeUpdate_Path = "Change.exe";
 
 constexpr const char* ServerName_Path = "sn.bin";
 constexpr const char* ServerList_Path = "serverlist.bin";

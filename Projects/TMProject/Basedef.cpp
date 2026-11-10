@@ -1698,14 +1698,7 @@ int BASE_GetItemAmount(STRUCT_ITEM* item)
 
 int BASE_CanCarry(STRUCT_ITEM* Carry, int pos)
 {
-    if (pos < 30)
-        return 1;
-    if (pos / 15 == 2 && Carry[60].sIndex != 3467)
-        return 0;
-    if (pos / 15 != 3 || Carry[61].sIndex == 3467)
-        return 1;
-
-    return 0;
+    return pos >= 0 && pos < 63;
 }
 
 int BASE_CanTrade(STRUCT_ITEM* Dest, STRUCT_ITEM* Carry, char* MyTrade, STRUCT_ITEM* OpponentTrade)

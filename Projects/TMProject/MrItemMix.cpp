@@ -1184,14 +1184,14 @@ int CItemMix::HardCode(SMessagePanel* MessagePanel, SGridControl** GridInvList)
 {
     if (m_NPCHead == 54 && m_dNPCX == 19 && m_dNPCY == 13)
     {
-        auto Item = GridInvList[m_stCombineItem.CarryPos[0] / 15]->GetItem(
-            m_stCombineItem.CarryPos[0] % 15 % 5,
-            m_stCombineItem.CarryPos[0] % 15 / 5
+        auto Item = GridInvList[CarryPage(m_stCombineItem.CarryPos[0])]->GetItem(
+            CarryCellX(m_stCombineItem.CarryPos[0]),
+            CarryCellY(m_stCombineItem.CarryPos[0])
         );
         
-        auto Item2 = GridInvList[m_stCombineItem.CarryPos[1] / 15]->GetItem(
-            m_stCombineItem.CarryPos[1] % 15 % 5,
-            m_stCombineItem.CarryPos[1] % 15 / 5
+        auto Item2 = GridInvList[CarryPage(m_stCombineItem.CarryPos[1])]->GetItem(
+            CarryCellX(m_stCombineItem.CarryPos[1]),
+            CarryCellY(m_stCombineItem.CarryPos[1])
         );
         if (Item
             && (Item->m_pItem->sIndex >= 1901 && Item->m_pItem->sIndex <= 1910
@@ -1218,9 +1218,9 @@ int CItemMix::HardCode(SMessagePanel* MessagePanel, SGridControl** GridInvList)
     {
         for (int i = 0; i < 2; ++i)
         {
-            auto Item = GridInvList[m_stCombineItem.CarryPos[i] / 15]->GetItem(
-                m_stCombineItem.CarryPos[0] % 15 % 5,
-                m_stCombineItem.CarryPos[0] % 15 / 5
+            auto Item = GridInvList[CarryPage(m_stCombineItem.CarryPos[i])]->GetItem(
+                CarryCellX(m_stCombineItem.CarryPos[0]),
+                CarryCellY(m_stCombineItem.CarryPos[0])
             ); // v22
 
             if (Item)
@@ -1246,14 +1246,14 @@ int CItemMix::HardCode(SMessagePanel* MessagePanel, SGridControl** GridInvList)
             }
         }
 
-        auto Item1 = GridInvList[m_stCombineItem.CarryPos[0] / 15]->GetItem(
-            m_stCombineItem.CarryPos[0] % 15 % 5,
-            m_stCombineItem.CarryPos[0] % 15 / 5
+        auto Item1 = GridInvList[CarryPage(m_stCombineItem.CarryPos[0])]->GetItem(
+            CarryCellX(m_stCombineItem.CarryPos[0]),
+            CarryCellY(m_stCombineItem.CarryPos[0])
         ); // v22
 
-        auto Item2 = GridInvList[m_stCombineItem.CarryPos[1] / 15]->GetItem(
-            m_stCombineItem.CarryPos[1] % 15 % 5,
-            m_stCombineItem.CarryPos[1] % 15 / 5
+        auto Item2 = GridInvList[CarryPage(m_stCombineItem.CarryPos[1])]->GetItem(
+            CarryCellX(m_stCombineItem.CarryPos[1]),
+            CarryCellY(m_stCombineItem.CarryPos[1])
         ); // v22
 
         if (strcmp(g_pItemList[Item1->m_pItem->sIndex].Name, g_pItemList[Item2->m_pItem->sIndex].Name))
@@ -1266,9 +1266,9 @@ int CItemMix::HardCode(SMessagePanel* MessagePanel, SGridControl** GridInvList)
     }
     else if (m_NPCHead == 56)
     {
-        auto Item = GridInvList[m_stCombineItem.CarryPos[0] / 15]->GetItem(
-            m_stCombineItem.CarryPos[0] % 15 % 5,
-            m_stCombineItem.CarryPos[0] % 15 / 5
+        auto Item = GridInvList[CarryPage(m_stCombineItem.CarryPos[0])]->GetItem(
+            CarryCellX(m_stCombineItem.CarryPos[0]),
+            CarryCellY(m_stCombineItem.CarryPos[0])
         ); // v7
 
         auto target1grade = g_pItemList[Item->m_pItem->sIndex].nUnique % 10;
@@ -1298,9 +1298,9 @@ int CItemMix::HardCode(SMessagePanel* MessagePanel, SGridControl** GridInvList)
             return 0;
         }
 
-        auto Item2 = GridInvList[m_stCombineItem.CarryPos[1] / 15]->GetItem(
-            m_stCombineItem.CarryPos[1] % 15 % 5,
-            m_stCombineItem.CarryPos[1] % 15 / 5
+        auto Item2 = GridInvList[CarryPage(m_stCombineItem.CarryPos[1])]->GetItem(
+            CarryCellX(m_stCombineItem.CarryPos[1]),
+            CarryCellY(m_stCombineItem.CarryPos[1])
         ); // v8
 
         auto target2grade = g_pItemList[Item2->m_pItem->sIndex].nUnique % 10;
@@ -1347,14 +1347,14 @@ int CItemMix::HardCode(SMessagePanel* MessagePanel, SGridControl** GridInvList)
     }
     else if (m_NPCHead == 67 && m_dNPCX == 25 && m_dNPCY == 13)
     {
-        auto Item = GridInvList[m_stCombineItem.CarryPos[0] / 15]->GetItem(
-            m_stCombineItem.CarryPos[0] % 15 % 5,
-            m_stCombineItem.CarryPos[0] % 15 / 5
+        auto Item = GridInvList[CarryPage(m_stCombineItem.CarryPos[0])]->GetItem(
+            CarryCellX(m_stCombineItem.CarryPos[0]),
+            CarryCellY(m_stCombineItem.CarryPos[0])
         ); // v27
 
-        auto Item2 = GridInvList[m_stCombineItem.CarryPos[1] / 15]->GetItem(
-            m_stCombineItem.CarryPos[1] % 15 % 5,
-            m_stCombineItem.CarryPos[1] % 15 / 5
+        auto Item2 = GridInvList[CarryPage(m_stCombineItem.CarryPos[1])]->GetItem(
+            CarryCellX(m_stCombineItem.CarryPos[1]),
+            CarryCellY(m_stCombineItem.CarryPos[1])
         ); // v25
 
         auto nItemSanc = BASE_GetItemSanc(Item->m_pItem);
@@ -1456,9 +1456,9 @@ int CItemMix::HardCode(SMessagePanel* MessagePanel, SGridControl** GridInvList)
                 return 0;
             }
 
-            auto Item3 = GridInvList[m_stCombineItem.CarryPos[2] / 15]->GetItem(
-                m_stCombineItem.CarryPos[2] % 15 % 5,
-                m_stCombineItem.CarryPos[2] % 15 / 5);
+            auto Item3 = GridInvList[CarryPage(m_stCombineItem.CarryPos[2])]->GetItem(
+                CarryCellX(m_stCombineItem.CarryPos[2]),
+                CarryCellY(m_stCombineItem.CarryPos[2]));
 
             bool checka = false;
             if (Item->m_pItem->sIndex >= 1901 && Item->m_pItem->sIndex <= 1910 && Item3->m_pItem->sIndex == 772)

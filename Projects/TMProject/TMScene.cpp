@@ -341,62 +341,195 @@ int TMScene::ParseRC(FILE* fp, FILE* fpBinary, char* szControlType)
 static int s_nClassicChatRootX = 0;
 static int s_nClassicChatRootY = 0;
 
-// HUD 7.48: status no canto superior esquerdo, chat embaixo a esquerda, EXP e skills embaixo a direita.
-// nAnchor 0: coordenada direta; 1: base do layout 800x600 ancorada no canto inferior direito;
-// 2: ancorada no canto inferior esquerdo. Pai 65628 fica em y=525 do layout.
-static bool ApplyClassicHudLayout(int nID, int& nX, int& nY, int& nWidth, int& nHeight, int* pParent, int* pTexture, int* pStyle)
+// Filhos adicionados por ultimo sao desenhados primeiro; este coloca o novo controle por cima.
+static void AddClassicChildOnTop(TreeNode* pParent, TreeNode* pChild)
 {
-	static const struct { int nID, nParent, nX, nY, nWidth, nHeight, nTexture, nStyle, nAnchor; } stHud[] =
+	TreeNode* pLast = pParent->m_pDown;
+	if (pLast == nullptr)
 	{
-		{ 65621, 65610, 14, 39, 77, 77, 419, 0, 0 }, { 65623, 65610, 95, 40, 104, 28, 421, 2, 0 }, { 65625, 65610, 125, 60, 73, 8, 422, 1, 0 },
-		{ 65612, 65610, 122, 13, 80, 16, 0, -1, 0 }, { 65613, 65610, 137, 13, 80, 16, 0, -1, 0 },
-		{ 65614, 65610, 24, 114, 20, 16, 0, -1, 0 }, { 65615, 65610, 57, 114, 20, 16, 0, -1, 0 },
-		{ 65616, 65610, 137, 34, 20, 16, 0, -1, 0 }, { 65617, 65610, 168, 34, 20, 16, 0, -1, 0 },
+		pParent->AddChild(pChild);
+		return;
+	}
+	while (pLast->m_pNextLink != nullptr)
+		pLast = pLast->m_pNextLink;
+	pLast->m_pNextLink = pChild;
+	pChild->m_pPrevLink = pLast;
+	pChild->m_pNextLink = nullptr;
+	pChild->m_pTop = pParent;
+}
 
-		{ 65641, 0, 0, 37, 311, 38, 410, -1, 2 },
+// Tira o controle da posicao atual entre os irmaos e o coloca por ultimo (desenhado por cima).
+static void MoveClassicChildOnTop(TreeNode* pChild)
+{
+	TreeNode* pParent = pChild->m_pTop;
+	if (pParent == nullptr || pChild->m_pNextLink == nullptr)
+		return;
 
-		{ 65636, 0, 441, 22, 50, 36, 0, -1, 1 },
-		{ 65637, 0, 453, 28, 10, 10, 413, -1, 1 }, { 65638, 0, 465, 28, 10, 10, 413, -1, 1 }, { 65639, 0, 477, 28, 10, 10, 413, -1, 1 },
-		{ 65644, 0, 516, 47, 240, 23, 0, -1, 1 }, { 65645, 0, 516, 47, 240, 23, 0, -1, 1 },
-		{ 65648, 0, 516, 42, 240, 5, 0, -1, 1 }, { 65643, 0, 497, 50, 20, 12, 0, -1, 1 },
-		{ 66560, 0, 316, 0, 24, 24, 0, -1, 1 }, { 66561, 0, 343, 0, 24, 24, 0, -1, 1 }, { 66562, 0, 370, 0, 24, 24, 0, -1, 1 }, { 66563, 0, 397, 0, 24, 24, 0, -1, 1 }, { 66564, 0, 424, 0, 24, 24, 0, -1, 1 },
-		{ 66559, 0, 315, -1, 26, 26, 0, -1, 1 }, { 66558, 0, 342, -1, 26, 26, 0, -1, 1 }, { 66527, 0, 369, -1, 26, 26, 0, -1, 1 }, { 66556, 0, 396, -1, 26, 26, 0, -1, 1 }, { 66555, 0, 423, -1, 26, 26, 0, -1, 1 },
-		{ 66565, 0, 328, 12, 13, 13, 0, -1, 1 }, { 66566, 0, 355, 12, 13, 13, 0, -1, 1 }, { 66567, 0, 382, 12, 13, 13, 0, -1, 1 }, { 66568, 0, 409, 12, 13, 13, 0, -1, 1 }, { 66569, 0, 436, 12, 13, 13, 0, -1, 1 },
-		{ 65787, 0, 762, 40, 29, 29, 0, -1, 1 }, { 66570, 0, 762, 10, 29, 29, 0, -1, 1 },
-		{ 65786, 0, 470, -6, 30, 30, 0, -1, 1 }, { 65785, 0, 468, -6, 35, 15, 0, -1, 1 },
+	if (pChild->m_pPrevLink != nullptr)
+		pChild->m_pPrevLink->m_pNextLink = pChild->m_pNextLink;
+	else
+		pParent->m_pDown = pChild->m_pNextLink;
+	pChild->m_pNextLink->m_pPrevLink = pChild->m_pPrevLink;
+	pChild->m_pPrevLink = nullptr;
+	pChild->m_pNextLink = nullptr;
+	AddClassicChildOnTop(pParent, pChild);
+}
+
+// HUD inferior identico ao 7.543: tabela gerada do UI\FieldScene2.bin dele.
+// Quanto a tela logica passa dos 800 da arte: a barra cresce esse tanto nos campos de Att/Def.
+static int ClassicHudExtra()
+{
+	int nExtra = (int)RenderDevice::m_fResWidthBase - 800;
+	return nExtra > 0 ? nExtra : 0;
+}
+
+static bool IsClassicHudRight(int nID)
+{
+	switch (nID)
+	{
+	case 65616: case 65617: case 65623: case 65637: case 65638: case 65639:
+	case 65643: case 65644: case 65645: case 65648: case 65787:
+	case 65660: case 65661: case 65662: case 65663: case 65664:
+		return true;
+	}
+	return false;
+}
+
+static bool ApplyClassicHudLayout(int nID, int& nX, int& nY, int& nWidth, int& nHeight, int* pParent, int* pTexture, int* pStyle, int* pColor)
+{
+	(void)pParent;
+	static const struct { int nID, nX, nY, nWidth, nHeight, nTexture, nStyle; } stHud[] =
+	{
+		{ 65671, 63, 25, 285, 13, 0, -1 },
+		{ 131072, 223, 41, 50, 15, 0, -1 },
+		{ 65682, 272, 41, 50, 15, 0, -1 },
+		{ 65683, 321, 41, 50, 15, 0, -1 },
+		{ 65684, 370, 41, 50, 15, 0, -1 },
+		{ 65685, 419, 41, 50, 15, 0, -1 },
+		{ 131073, 213, 39, 18, 17, 830, -1 },
+		{ 65673, 262, 39, 18, 17, 830, -1 },
+		{ 65674, 311, 39, 18, 17, 830, -1 },
+		{ 65675, 360, 39, 18, 17, 830, -1 },
+		{ 65676, 409, 39, 18, 17, 830, -1 },
+		{ 131074, 213, 41, 48, 15, -831, -1 },
+		{ 65677, 262, 41, 48, 15, -831, -1 },
+		{ 65678, 311, 41, 48, 15, -831, -1 },
+		{ 65679, 360, 41, 48, 15, -831, -1 },
+		{ 65680, 409, 41, 48, 15, -831, -1 },
+		{ 65681, 0, 0, 510, 58, 832, -1 },
+		{ 66560, 211, 23, 32, 32, 0, -1 },
+		{ 66561, 244, 23, 32, 32, 0, -1 },
+		{ 66562, 277, 23, 32, 32, 0, -1 },
+		{ 65636, 365, 50, 50, 36, 364, -1 },
+		{ 65648, 411, 24, 240, 24, 0, -1 },
+		{ 65784, 0, 0, 23, 5, -833, -1 },
+		{ 65783, 24, 0, 23, 5, -833, -1 },
+		{ 65782, 48, 0, 23, 5, -833, -1 },
+		{ 65781, 72, 0, 23, 5, -833, -1 },
+		{ 65780, 96, 0, 23, 5, -833, -1 },
+		{ 65779, 120, 0, 23, 5, -833, -1 },
+		{ 65778, 144, 0, 23, 5, -833, -1 },
+		{ 65777, 168, 0, 23, 5, -833, -1 },
+		{ 65776, 192, 0, 23, 5, -833, -1 },
+		{ 65775, 216, 0, 23, 5, -833, -1 },
+		{ 65643, 624, 13, 20, 8, 0, -1 },
+		{ 65644, 411, 31, 240, 24, 0, -1 },
+		{ 65645, 411, 31, 240, 24, 0, -1 },
+		{ 65786, 3, 43, 18, 17, 830, -1 },
+		{ 65785, 3, 43, 50, 17, -831, -1 },
+		{ 65612, 48, 43, 80, 16, 0, -1 },
+		{ 65613, 63, 43, 80, 16, 0, -1 },
+		{ 65614, -3000, -3000, 46, 16, 0, -1 },
+		{ 65615, -3000, -3000, 46, 16, 0, -1 },
+		{ 65616, -3000, -3000, 46, 16, 0, -1 },
+		{ 65617, -3000, -3000, 46, 16, 0, -1 },
+		{ 65637, 731, 46, 13, 13, 834, -1 },
+		{ 65638, 751, 46, 13, 13, 834, -1 },
+		{ 65639, 771, 46, 13, 13, 834, -1 },
+		{ 65655, 5, 63, 78, 9, 835, 1 },
+		{ 65656, 84, 63, 78, 9, 835, 1 },
+		{ 65657, 163, 63, 78, 9, 835, 1 },
+		{ 65658, 242, 63, 78, 9, 835, 1 },
+		{ 65659, 321, 63, 78, 9, 835, 1 },
+		{ 65660, 400, 63, 78, 9, 835, 1 },
+		{ 65661, 479, 63, 78, 9, 835, 1 },
+		{ 65662, 558, 63, 78, 9, 835, 1 },
+		{ 65663, 637, 63, 78, 9, 835, 1 },
+		{ 65664, 716, 63, 78, 9, 835, 1 },
+		{ 65665, 143, 38, 33, 16, 0, -1 },
+		{ 65666, 172, 38, 33, 16, 0, -1 },
+		{ 65641, 0, 20, 338, 40, 850, -1 },
+		{ 65621, 14, -48, 93, 93, 837, 0 },
+		{ 65625, 11, -99, 35, 35, 838, 0 },
+		{ 65623, 692, -47, 93, 93, 839, 0 },
+		{ 65787, 749, -110, 40, 38, -831, -1 },
+		{ 656433, -3000, -3000, 1, 1, 0, -1 },
+		{ 66559, -3000, -3000, 1, 1, 0, -1 },
+		{ 66558, -3000, -3000, 1, 1, 0, -1 },
+		{ 66527, -3000, -3000, 1, 1, 0, -1 },
+		{ 66556, -3000, -3000, 1, 1, 0, -1 },
+		{ 66555, -3000, -3000, 1, 1, 0, -1 },
+		{ 66554, -3000, -3000, 1, 1, 0, -1 },
+		{ 66553, -3000, -3000, 1, 1, 0, -1 },
+		{ 66552, -3000, -3000, 1, 1, 0, -1 },
+		{ 66551, -3000, -3000, 1, 1, 0, -1 },
+		{ 66550, -3000, -3000, 1, 1, 0, -1 },
+		{ 66549, -3000, -3000, 1, 1, 0, -1 },
+		{ 66548, -3000, -3000, 1, 1, 0, -1 },
+		{ 66547, -3000, -3000, 1, 1, 0, -1 },
+		{ 66546, -3000, -3000, 1, 1, 0, -1 },
+		{ 66545, -3000, -3000, 1, 1, 0, -1 },
+		{ 66563, -3000, -3000, 1, 1, 0, -1 },
+		{ 66564, -3000, -3000, 1, 1, 0, -1 },
+		{ 66565, -3000, -3000, 1, 1, 0, -1 },
+		{ 66566, -3000, -3000, 1, 1, 0, -1 },
+		{ 66567, -3000, -3000, 1, 1, 0, -1 },
+		{ 66568, -3000, -3000, 1, 1, 0, -1 },
+		{ 66569, -3000, -3000, 1, 1, 0, -1 },
+		{ 365786, -3000, -3000, 1, 1, 0, -1 },
+		{ 484678, -3000, -3000, 1, 1, 0, -1 },
+		{ 69635, -3000, -3000, 1, 1, 0, -1 },
+		{ 469636, -3000, -3000, 1, 1, 0, -1 },
+		{ 569636, -3000, -3000, 1, 1, 0, -1 },
+		{ 69636, -3000, -3000, 1, 1, 0, -1 },
+		{ 645642, -3000, -3000, 1, 1, 0, -1 },
+		{ 66570, 110, 23, 29, 29, -831, -1 },
 	};
 
-	float fShiftX = RenderDevice::m_fResWidthBase - 800.0f;
-	float fShiftY = RenderDevice::m_fResHeightBase - 600.0f;
-	int nRightX = fShiftX > 0.0f ? (int)fShiftX : 0;
-	int nBottomY = fShiftY > 0.0f ? (int)fShiftY : 0;
+	float fLogicalW = RenderDevice::m_fResWidthBase;
+	float fLogicalH = RenderDevice::m_fResHeightBase;
+		(void)fLogicalW;
+	const int nBarX = 0;
+	const int nExtra = ClassicHudExtra();
+	int nBarY = (int)fLogicalH - 74;
 
-	if (nID >= 65655 && nID <= 65664)
+	if (nID == 65628)
 	{
-		int nSegment = nID - 65655;
-		nX = 316 + (nSegment * 176) / 10 + nRightX;
-		nY = 41 + nBottomY;
-		nWidth = 18;
-		nHeight = 13;
-		if (pTexture)
-			*pTexture = 414;
+		nX = nBarX;
+		nY = nBarY;
+		nWidth = 800 + nExtra;
+		nHeight = 74;
 		return true;
 	}
 
-	if (nID >= 65775 && nID <= 65784)
+	if (nID == 66817)
 	{
-		nX = (65784 - nID) * 24;
-		nY = 0;
-		nWidth = 23;
-		nHeight = 5;
+		// Icones do modo automatico: acima da ponta direita do chat, fora da esfera de MP.
+		nX = nBarX + 510;
+		nY = nBarY - 90;
 		return true;
 	}
 
-	if (nID == 65672)
+	if (nID == 65672 || nID == 65670)
 	{
-		// Abas do chat dentro da moldura antiga; o pai (99050) e posicionado pela resolucao.
-		nX = 8 - s_nClassicChatRootX;
-		nY = (int)RenderDevice::m_fResHeightBase - 19 - s_nClassicChatRootY;
+		// Chat logo acima da barra, ao lado da esfera de HP.
+		nX = nBarX + 128 - s_nClassicChatRootX;
+		nY = nBarY - 58 - s_nClassicChatRootY;
+		if (nID == 65672)
+		{
+			nWidth = 510;
+			nHeight = 58;
+		}
 		return true;
 	}
 
@@ -405,62 +538,140 @@ static bool ApplyClassicHudLayout(int nID, int& nX, int& nY, int& nWidth, int& n
 		if (stItem.nID != nID)
 			continue;
 
-		nX = stItem.nX + (stItem.nAnchor == 1 ? nRightX : 0);
-		nY = stItem.nY + (stItem.nAnchor != 0 ? nBottomY : 0);
+		nX = stItem.nX;
+		nY = stItem.nY;
 		nWidth = stItem.nWidth;
 		nHeight = stItem.nHeight;
-		if (pParent && stItem.nParent)
-			*pParent = stItem.nParent;
+		if (IsClassicHudRight(nID))
+			nX += nExtra;
+		else if (nID == 65659)
+			nWidth += nExtra;
+		else if (nID == 65636)
+			nX += nExtra / 2;
 		if (pTexture && stItem.nTexture)
 			*pTexture = stItem.nTexture;
 		if (pStyle && stItem.nStyle >= 0)
 			*pStyle = stItem.nStyle;
+
+		// Botoes que no 7.543 sao so areas clicaveis sobre a arte da barra.
+		if (pTexture && *pTexture == -831)
+		{
+			*pTexture = -2;
+			if (pColor)
+				*pColor = 0;
+		}
 		return true;
 	}
 
 	return false;
 }
 
+static void AddClassicOrbFrame(SControlContainer* pContainer, bool bLeft)
+{
+	SControl* pBar = pContainer->FindControl(65628);
+	if (pBar == nullptr)
+		return;
+	auto pFrame = bLeft
+		? new SPanel(-840, 0.0f, -103.0f, 128.0f, 103.0f, 0xFFFFFFFF, RENDERCTRLTYPE::RENDER_IMAGE_STRETCH)
+		: new SPanel(-841, 672.0f + (float)ClassicHudExtra(), -110.0f, 128.0f, 110.0f, 0xFFFFFFFF, RENDERCTRLTYPE::RENDER_IMAGE_STRETCH);
+	pFrame->m_bPickable = 0;
+	pBar->AddChild(static_cast<TreeNode*>(pFrame));
+}
+
 static void AddClassicHudArt(SControlContainer* pContainer)
 {
-	SControl* pStatus = pContainer->FindControl(65610);
-	SControl* pBottom = pContainer->FindControl(65628);
-	if (pStatus == nullptr || pBottom == nullptr)
+	SControl* pBar = pContainer->FindControl(65628);
+	if (pBar == nullptr)
 		return;
 
-	float fRightX = RenderDevice::m_fResWidthBase > 800.0f ? RenderDevice::m_fResWidthBase - 800.0f : 0.0f;
-	float fBottomY = RenderDevice::m_fResHeightBase > 600.0f ? RenderDevice::m_fResHeightBase - 600.0f : 0.0f;
+	auto pMountBack = new SPanel(-842, 11.0f, -99.0f, 36.0f, 35.0f, 0xFFFFFFFF, RENDERCTRLTYPE::RENDER_IMAGE_STRETCH);
+	pMountBack->m_bPickable = 0;
+	pBar->AddChild(static_cast<TreeNode*>(pMountBack));
 
-	// Textos de ataque e defesa ficam antes da arte: filhos adicionados por ultimo sao desenhados por baixo.
-	static const struct { unsigned int dwID; float fX; } stValues[] =
+	// A arte da barra em pedacos: so as caixas de Att/Def, duas cordas do topo e um
+	// trecho da faixa de experiencia crescem; o resto mantem o tamanho original.
+	const float fExtra = (float)ClassicHudExtra();
+	const float fHalf = (float)(ClassicHudExtra() / 2);
+	const float fRest = fExtra - fHalf;
+	SControl* pBarArt = pContainer->FindControl(65641);
+	if (pBarArt != nullptr)
 	{
-		{ 9100001, 335.0f }, { 9100002, 367.0f }, { 9100003, 424.0f }, { 9100004, 454.0f },
+		const struct { int nSet; float fX, fY, fWidth, fHeight; } stPieces[] =
+		{
+			{ -845, 0.0f, -20.0f, 250.0f, 20.0f },
+			{ -846, 250.0f, -20.0f, 100.0f + fHalf, 20.0f },
+			{ -847, 350.0f + fHalf, -20.0f, 105.0f, 20.0f },
+			{ -848, 455.0f + fHalf, -20.0f, 95.0f + fRest, 20.0f },
+			{ -849, 550.0f + fExtra, -20.0f, 250.0f, 20.0f },
+			{ -851, 338.0f, 0.0f, 35.0f + fHalf, 40.0f },
+			{ -852, 373.0f + fHalf, 0.0f, 2.0f, 40.0f },
+			{ -853, 375.0f + fHalf, 0.0f, 34.0f + fRest, 40.0f },
+			{ -854, 409.0f + fExtra, 0.0f, 391.0f, 40.0f },
+			{ -855, 0.0f, 40.0f, 321.0f, 14.0f },
+			{ -856, 321.0f, 40.0f, 78.0f + fExtra, 14.0f },
+			{ -857, 399.0f + fExtra, 40.0f, 401.0f, 14.0f },
+		};
+		for (const auto& stPiece : stPieces)
+		{
+			auto pPiece = new SPanel(stPiece.nSet, stPiece.fX, stPiece.fY, stPiece.fWidth, stPiece.fHeight, 0xFFFFFFFF, RENDERCTRLTYPE::RENDER_IMAGE_STRETCH);
+			pPiece->m_bPickable = 0;
+			pBarArt->AddChild(static_cast<TreeNode*>(pPiece));
+		}
+	}
+
+	// Ataque e defesa nas caixas da barra.
+	const struct { unsigned int dwID; float fX, fY, fWidth; } stValues[] =
+	{
+		{ 9100001, 338.0f, 22.0f, 35.0f + fHalf }, { 9100002, 375.0f + fHalf, 22.0f, 34.0f + fRest },
+		{ 9100003, 338.0f, 38.0f, 35.0f + fHalf }, { 9100004, 375.0f + fHalf, 38.0f, 34.0f + fRest },
 	};
 	for (const auto& stValue : stValues)
 	{
-		auto pText = new SText(-1, "", 0xFFFFFFFF, stValue.fX + fRightX, 56.0f + fBottomY, 26.0f, 16.0f, 0, 0, 1, 1);
+		auto pText = new SText(-1, "", 0xFFFFFFFF, stValue.fX, stValue.fY, stValue.fWidth, 16.0f, 0, 0, 1, 1);
 		pText->SetControlID(stValue.dwID);
-		pBottom->AddChild(static_cast<TreeNode*>(pText));
+		AddClassicChildOnTop(pBar, pText);
 	}
 
-	static const struct { bool bStatus; int nTexture; float fX, fY, fWidth, fHeight; } stArt[] =
+	// Botoes do 7.543 que nao existem no layout do 7.87.
+	const struct { unsigned int dwID; int nTexture; float fX, fY, fWidth, fHeight; } stButtons[] =
 	{
-		{ true, 411, 0.0f, 0.0f, 206.0f, 132.0f },
-		{ false, 409, 311.0f, 26.0f, 185.0f, 49.0f },
-		{ false, 406, 496.0f, 37.0f, 264.0f, 38.0f },
+		{ 65646, -843, 617.0f + fExtra, 8.0f, 13.0f, 13.0f }, { 65647, -844, 641.0f + fExtra, 8.0f, 13.0f, 13.0f }, { 65792, -2, 655.0f + fExtra, 12.0f, 44.0f, 44.0f },
 	};
-	for (const auto& stItem : stArt)
+	for (const auto& stButton : stButtons)
 	{
-		float fX = stItem.fX + (stItem.bStatus ? 0.0f : fRightX);
-		float fY = stItem.fY + (stItem.bStatus ? 0.0f : fBottomY);
-		auto pPanel = new SPanel(stItem.nTexture, fX, fY, stItem.fWidth, stItem.fHeight, 0xFFFFFFFF, RENDERCTRLTYPE::RENDER_IMAGE_STRETCH);
-		pPanel->m_bPickable = 0;
-		(stItem.bStatus ? pStatus : pBottom)->AddChild(static_cast<TreeNode*>(pPanel));
+		char szEmpty[2]{};
+		auto pButton = new SButton(stButton.nTexture, stButton.fX, stButton.fY, stButton.fWidth, stButton.fHeight, stButton.nTexture == -2 ? 0u : 0xFFFFFFFFu, 0, szEmpty);
+		pButton->SetControlID(stButton.dwID);
+		pButton->SetEventListener(static_cast<IEventListener*>(pContainer));
+		AddClassicChildOnTop(pBar, pButton);
+	}
+
+	// O campo de digitacao precisa ficar por cima da moldura do chat.
+	SControl* pEditPanel = pContainer->FindControl(65670);
+	if (pEditPanel != nullptr)
+		MoveClassicChildOnTop(pEditPanel);
+
+	// Ouro em grupos de 3 digitos, cada grupo com sua cor.
+	static const struct { unsigned int dwFirstID; unsigned int dwParent; float fRight, fY; } stGold[] =
+	{
+		{ 9100100, 589832, 187.0f, 396.0f }, { 9100110, 65686, 103.0f, 397.0f },
+	};
+	for (const auto& stItem : stGold)
+	{
+		SControl* pParent = pContainer->FindControl(stItem.dwParent);
+		if (pParent == nullptr)
+			continue;
+		for (int nGroup = 0; nGroup < 7; ++nGroup)
+		{
+			auto pText = new SText(-1, "", 0xFFFFFFFF, stItem.fRight - (float)(nGroup + 1) * 22.0f, stItem.fY, 22.0f, 18.0f, 0, 0, 1, 1);
+			pText->SetControlID(stItem.dwFirstID + nGroup);
+			AddClassicChildOnTop(pParent, pText);
+		}
 	}
 }
 
 static void ApplyClassicInventoryLayout(const char* szBinFileName, int nID, int& nX, int& nY, int& nWidth, int& nHeight,
-	int* pParent = nullptr, int* pTexture = nullptr, int* pStyle = nullptr)
+	int* pParent = nullptr, int* pTexture = nullptr, int* pStyle = nullptr, int* pColor = nullptr)
 {
 	if (strstr(szBinFileName, "FieldScene2") == nullptr)
 		return;
@@ -472,7 +683,7 @@ static void ApplyClassicInventoryLayout(const char* szBinFileName, int nID, int&
 		return;
 	}
 
-	if (ApplyClassicHudLayout(nID, nX, nY, nWidth, nHeight, pParent, pTexture, pStyle))
+	if (ApplyClassicHudLayout(nID, nX, nY, nWidth, nHeight, pParent, pTexture, pStyle, pColor))
 		return;
 
 	static const struct { int nID, nX, nY, nWidth, nHeight; } stLayout[] =
@@ -531,7 +742,7 @@ static void ApplyClassicInventoryLayout(const char* szBinFileName, int nID, int&
 		{ 65604, 33, 40, 90, 16 }, { 65605, 33, 130, 90, 16 }, { 65606, 33, 220, 90, 16 },
 
 		// Titulos e valores nas posicoes do 7.543
-		{ 65701, 169, 115, 90, 16 }, { 65687, 89, 4, 90, 16 }, { 65689, 37, 397, 74, 18 }, { 65693, 89, 5, 90, 16 },
+		{ 65701, 169, 115, 90, 16 }, { 65687, 89, 4, 90, 16 }, { 65689, -3000, -3000, 74, 18 }, { 65564, -3000, -3000, 74, 18 }, { 65693, 89, 5, 90, 16 },
 	};
 
 	for (const auto& stItem : stLayout)
@@ -550,7 +761,7 @@ static void ApplyClassicInventoryLayout(const char* szBinFileName, int nID, int&
 	if ((nID >= 3080 && nID <= 3112) || nID == 43087 || (nID >= 67076 && nID <= 67079) || nID == 77834 || nID == 77835 ||
 		(nID >= 3000 && nID <= 3079) || (nID >= 67332 && nID <= 67335) ||
 		(nID >= 66496 && nID <= 66554 && nID != 66527) || (nID >= 3120 && nID <= 3144) ||
-		nID == 469636 || nID == 569636 || nID == 69635 || nID == 69636 || nID == 65681)
+		nID == 469636 || nID == 569636 || nID == 69635 || nID == 69636)
 	{
 		nX = -3000;
 		nY = -3000;
@@ -655,6 +866,14 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binGridData.nWidth = controlBase.nWidth;
 			binGridData.nHeight = controlBase.nHeight;
 			ApplyClassicInventoryLayout(szBinFileName, binGridData.nID, binGridData.nStartX, binGridData.nStartY, binGridData.nWidth, binGridData.nHeight);
+			if (binGridData.nID == 67075)
+			{
+				// Ultima pagina ganha uma linha para os slots 60 a 62.
+				if (binGridData.nRowCount == 3)
+					binGridData.nRowCount = 4;
+				else
+					binGridData.nColumnCount = 4;
+			}
 
 			auto pGrid = new SGridControl(
 				binGridData.nTextureSetIndex,
@@ -771,11 +990,13 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binButtonData.nStartY = controlBase.nStartY;
 			binButtonData.nWidth = controlBase.nWidth;
 			binButtonData.nHeight = controlBase.nHeight;
-			ApplyClassicInventoryLayout(szBinFileName, binButtonData.nID, binButtonData.nStartX, binButtonData.nStartY, binButtonData.nWidth, binButtonData.nHeight);
+			ApplyClassicInventoryLayout(szBinFileName, binButtonData.nID, binButtonData.nStartX, binButtonData.nStartY, binButtonData.nWidth, binButtonData.nHeight, nullptr, &binButtonData.nTextureSetIndex, nullptr, &binButtonData.nColor);
 
 			/*texto no btn*/
 			char strbuf[128]{};
 			sprintf_s(strbuf, "%s", g_UIString[binButtonData.nStringIndex]);
+			if (binButtonData.nTextureSetIndex == -2 && binButtonData.nColor == 0)
+				strbuf[0] = 0; // area clicavel sobre a arte da barra: sem rotulo
 
 			auto pButton = new SButton(
 				binButtonData.nTextureSetIndex,
@@ -904,6 +1125,7 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binEditData.nStartY = controlBase.nStartY;
 			binEditData.nWidth = controlBase.nWidth;
 			binEditData.nHeight = controlBase.nHeight;
+			ApplyClassicInventoryLayout(szBinFileName, binEditData.nID, binEditData.nStartX, binEditData.nStartY, binEditData.nWidth, binEditData.nHeight);
 
 			auto pEdit = new SEditableText(
 				binEditData.nTextureSetIndex,
@@ -974,6 +1196,10 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			binProgressData.nWidth = controlBase.nWidth;
 			binProgressData.nHeight = controlBase.nHeight;
 			ApplyClassicInventoryLayout(szBinFileName, binProgressData.nID, binProgressData.nStartX, binProgressData.nStartY, binProgressData.nWidth, binProgressData.nHeight, &binProgressData.nParentID, &binProgressData.nTextureSetIndex, &binProgressData.nStyle);
+
+			// A moldura da esfera e criada antes dela para ser desenhada por cima.
+			if ((binProgressData.nID == 65621 || binProgressData.nID == 65623) && strstr(szBinFileName, "FieldScene2") != nullptr)
+				AddClassicOrbFrame(m_pControlContainer, binProgressData.nID == 65621);
 
 			auto pProgress = new SProgressBar(
 				binProgressData.nTextureSetIndex,

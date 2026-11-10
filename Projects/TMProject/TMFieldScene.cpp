@@ -89,6 +89,63 @@ static float ClassicPanelX(float fBaseX)
 	return ((float)g_pDevice->m_dwScreenWidth * 0.5f) + ((fBaseX - 400.5f) * RenderDevice::m_fWidthRatio);
 }
 
+// Ouro em grupos de 3 digitos, da direita para a esquerda, cada grupo com uma cor.
+static void UpdateClassicGold(SControlContainer* pContainer, SText* pSource, unsigned int dwFirstID)
+{
+	if (pSource == nullptr)
+		return;
+
+	static const unsigned int dwColors[7] = { 0xFFFFFFFF, 0xFFFFFF55, 0xFF55FF55, 0xFF55FFFF, 0xFFFFAA33, 0xFFFF77FF, 0xFFFF5555 };
+	char szDigits[64]{};
+	int nDigits = 0;
+	for (const char* pChar = pSource->m_GCText.strString; *pChar && nDigits < 63; ++pChar)
+	{
+		if (*pChar >= '0' && *pChar <= '9')
+			szDigits[nDigits++] = *pChar;
+	}
+
+	for (int nGroup = 0; nGroup < 7; ++nGroup)
+	{
+		auto pText = (SText*)pContainer->FindControl(dwFirstID + nGroup);
+		if (pText == nullptr)
+			continue;
+
+		char szGroup[8]{};
+		int nEnd = nDigits - nGroup * 3;
+		if (nEnd > 0)
+		{
+			int nStart = nEnd > 3 ? nEnd - 3 : 0;
+			memcpy(szGroup, &szDigits[nStart], nEnd - nStart);
+		}
+
+		if (strcmp(pText->m_GCText.strString, szGroup) != 0)
+		{
+			pText->SetText(szGroup, 0);
+			pText->SetTextColor(dwColors[nGroup]);
+		}
+	}
+
+	// Cada grupo ocupa a largura real dos digitos, separado do proximo por um respiro fixo.
+	auto pFirst = (SText*)pContainer->FindControl(dwFirstID);
+	if (pFirst == nullptr)
+		return;
+
+	float fRight = pFirst->m_nPosX + pFirst->m_nWidth;
+	float fGap = BASE_ScreenResize(4.0f);
+	for (int nGroup = 0; nGroup < 7; ++nGroup)
+	{
+		auto pText = (SText*)pContainer->FindControl(dwFirstID + nGroup);
+		if (pText == nullptr || pText->m_GCText.strString[0] == 0)
+			continue;
+
+		SIZE stSize{};
+		GetTextExtentPoint32(g_pDevice->m_hDC, pText->m_GCText.strString, (int)strlen(pText->m_GCText.strString), &stSize);
+		pText->m_nWidth = (float)stSize.cx;
+		pText->m_nPosX = fRight - pText->m_nWidth;
+		fRight = pText->m_nPosX - fGap;
+	}
+}
+
 static float ClassicPanelY(float fBaseY)
 {
 	return ((float)g_pDevice->m_dwScreenHeight * 0.5f) + ((fBaseY - 245.5f) * RenderDevice::m_fHeightRatio);
@@ -1143,10 +1200,10 @@ int TMFieldScene::InitializeScene()
 
 	SPanel* pChatPanel = (SPanel*)m_pControlContainer->FindControl(65672);
 	m_pChatPanel = (SPanel*)m_pControlContainer->FindControl(65672);
-	m_pChatList->m_nPosX = BASE_ScreenResize(10.0f);//alterado
+	m_pChatList->m_nPosX = pChatPanel->m_nPosX + BASE_ScreenResize(6.0f);//alterado
 	m_pChatList->m_nPosY = (pChatPanel->m_nPosY - m_pChatList->m_nHeight) - BASE_ScreenResize(10.0f);
 
-	m_pChatBack->m_nPosX = BASE_ScreenResize(10.0f);
+	m_pChatBack->m_nPosX = pChatPanel->m_nPosX + BASE_ScreenResize(6.0f);
 	m_pChatBack->m_nPosY = m_pChatList->m_nPosY - BASE_ScreenResize(10.0f);
 
 	m_pChatBack->SetSize(BASE_ScreenResize(10.0f) + m_pChatList->m_nWidth,
@@ -1185,7 +1242,7 @@ int TMFieldScene::InitializeScene()
 		m_pMainInfo2->SetStickLeft();
 		m_pMainInfo2->SetStickTop();
 		m_pMainInfo2_Name = (SText*)m_pControlContainer->FindControl(65611);
-		m_pMainInfo2->SetVisible(1);
+		m_pMainInfo2->SetVisible(0);
 	}
 
 	m_pMainInfo2_Lv = (SText*)m_pControlContainer->FindControl(65613);
@@ -1579,6 +1636,13 @@ int TMFieldScene::InitializeScene()
 	m_pMaxHPText = (SText*)m_pControlContainer->FindControl(65615);
 	m_pCurrentMPText = (SText*)m_pControlContainer->FindControl(65616);
 	m_pMaxMPText = (SText*)m_pControlContainer->FindControl(65617);
+
+	// Valores centralizados nas caixas da barra.
+	for (SText* pValue : { m_pCurrentHPText, m_pMaxHPText, m_pCurrentMPText, m_pMaxMPText })
+	{
+		if (pValue)
+			pValue->m_dwAlignType = 1;
+	}
 	m_pCurrentMHPText = (SText*)m_pControlContainer->FindControl(65618);
 	m_pMaxMHPText = (SText*)m_pControlContainer->FindControl(65619);
 	m_pExpHold = (SPanel*)m_pControlContainer->FindControl(65636);
@@ -1858,12 +1922,13 @@ int TMFieldScene::InitializeScene()
 	m_pHPBar->m_nProgressWidth = 0.0f;
 	m_pHPBar->m_nProgressHeight = 0.0f;
 
-	m_pMPBar->m_InitHeight = 90.0f;
-	m_pMPBar->m_InitStartY = 33.0f;
-	m_pMPBar->m_InitWidth = 75.0f;
-	m_pMPBar->m_InitStartX = 103.0f;
+	// Recorte da esfera de MP no atlas do HUD 7.543 (conjunto 839).
+	m_pMPBar->m_InitHeight = 93.0f;
+	m_pMPBar->m_InitStartY = 71.0f;
+	m_pMPBar->m_InitWidth = 93.0f;
+	m_pMPBar->m_InitStartX = 325.0f;
 	m_pMPBar->m_nProgressWidth = 0.0f;
-	m_pMPBar->m_nProgressHeight = 90.0f;
+	m_pMPBar->m_nProgressHeight = m_pMPBar->m_nHeight;
 
 	if (pMobData->Equip[1].sIndex > 40 && nClass != 21)
 	{
@@ -1999,12 +2064,12 @@ int TMFieldScene::InitializeScene()
 			STRUCT_ITEM* pItemCarry = new STRUCT_ITEM;
 			memcpy(pItemCarry, &pMobData->Carry[nCarryIndex], 8);
 
-			int Page = nCarryIndex / 15;
-			if (nCarryIndex / 15 > -1 && Page < 4)
+			int Page = CarryPage(nCarryIndex);
+			if (CarryPage(nCarryIndex) > -1 && Page < 4)
 			{
 				m_pGridInvList[Page]->AddItem(new SGridControlItem(0, pItemCarry, 0.0f, 0.0f),
-					nCarryIndex % 15 % 5,
-					nCarryIndex % 15 / 5);
+					CarryCellX(nCarryIndex),
+					CarryCellY(nCarryIndex));
 			}
 			else
 				delete pItemCarry;
@@ -6747,9 +6812,9 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 		}
 		if (m_stPotalItem.Header.ID)
 		{
-			int nSourPage = m_stPotalItem.SourPos / 15;
-			int nSourRes = m_stPotalItem.SourPos % 15 % 5;
-			int nSourDiv = m_stPotalItem.SourPos % 15 / 5;
+			int nSourPage = CarryPage(m_stPotalItem.SourPos);
+			int nSourRes = CarryCellX(m_stPotalItem.SourPos);
+			int nSourDiv = CarryCellY(m_stPotalItem.SourPos);
 			auto pGridInvList = m_pGridInvList[nSourPage];
 			auto pItem = pGridInvList->GetItem(nSourRes, nSourDiv);
 
@@ -16538,10 +16603,12 @@ void TMFieldScene::DropItem(unsigned int dwServerTime)
 
 	if (stDrop.SourType)
 	{
+		// As grades do inventario e do bau sao paginas: o servidor recebe o slot absoluto.
+		int nControlID = (int)pAttachItem->m_pGridControl->m_dwControlID;
 		if (stDrop.SourType == 1)
-			stDrop.SourPos = nAX + 5 * nAY;
+			stDrop.SourPos = nAX + 5 * nAY + (nControlID >= 67072 && nControlID <= 67075 ? 15 * (nControlID - 67072) : 0);
 		else if (stDrop.SourType == 2)
-			stDrop.SourPos = nAX + 5 * nAY;
+			stDrop.SourPos = nAX + 5 * nAY + (nControlID >= 67328 && nControlID <= 67331 ? 40 * (nControlID - 67328) : 0);
 		else
 			stDrop.SourPos = pAttachItem->m_pGridControl->CheckPos(pAttachItem->m_pGridControl->m_eItemType);
 
@@ -20539,7 +20606,7 @@ char TMFieldScene::UseHPotion()
 
 		if (nAmount <= 1)
 		{
-			auto pPickedItem = m_pGridInvList[SourPosa / 15]->PickupItem(SourPosa % 15 % 5, SourPosa % 15 / 5);
+			auto pPickedItem = m_pGridInvList[CarryPage(SourPosa)]->PickupItem(CarryCellX(SourPosa), CarryCellY(SourPosa));
 			if (g_pCursor->m_pAttachedItem && g_pCursor->m_pAttachedItem == pPickedItem)
 				g_pCursor->m_pAttachedItem = 0;
 
@@ -20635,7 +20702,7 @@ char TMFieldScene::UseMPotion()
 
 		if (nAmount <= 1)
 		{
-			auto pPickedItem = m_pGridInvList[SourPosa / 15]->PickupItem(SourPosa % 15 % 5, SourPosa % 15 / 5);
+			auto pPickedItem = m_pGridInvList[CarryPage(SourPosa)]->PickupItem(CarryCellX(SourPosa), CarryCellY(SourPosa));
 			if (g_pCursor->m_pAttachedItem && g_pCursor->m_pAttachedItem == pPickedItem)
 				g_pCursor->m_pAttachedItem = 0;
 
@@ -20773,7 +20840,7 @@ char TMFieldScene::FeedMount()
 		int nAmount = BASE_GetItemAmount(pItem->m_pItem);
 		if (nAmount <= 1)
 		{
-			auto pPickedItem = m_pGridInvList[SourPosa / 15]->PickupItem(SourPosa % 15 % 5, SourPosa % 15 / 5);
+			auto pPickedItem = m_pGridInvList[CarryPage(SourPosa)]->PickupItem(CarryCellX(SourPosa), CarryCellY(SourPosa));
 			if (g_pCursor->m_pAttachedItem && g_pCursor->m_pAttachedItem == pPickedItem)
 				g_pCursor->m_pAttachedItem = 0;
 
@@ -20965,7 +21032,7 @@ char TMFieldScene::UseQuickSloat(char key)
 	}
 	else
 	{
-		auto pPickedItem = m_pGridInvList[stUseItem.SourPos / 15]->PickupItem(stUseItem.SourPos % 15 % 5, stUseItem.SourPos % 15 / 5);
+		auto pPickedItem = m_pGridInvList[CarryPage(stUseItem.SourPos)]->PickupItem(CarryCellX(stUseItem.SourPos), CarryCellY(stUseItem.SourPos));
 		if (g_pCursor->m_pAttachedItem && g_pCursor->m_pAttachedItem == pPickedItem)
 			g_pCursor->m_pAttachedItem = 0;
 
@@ -24787,12 +24854,17 @@ int TMFieldScene::OnPacketCNFDropItem(MSG_CNFDropItem* pMsg)
 	}
 	else if (pMsg->SourType == 1)
 	{
-		auto pGridItem = m_pGridInv->PickupAtItem(pMsg->SourPos % 5, pMsg->SourPos / 5);
+		int nPage = CarryPage(pMsg->SourPos);
+		int nCell = pMsg->SourPos - 15 * nPage;
+		SGridControl* pGrid = nPage >= 0 && nPage < 4 ? m_pGridInvList[nPage] : m_pGridInv;
+		pGridItem = pGrid->PickupAtItem(nCell % 5, nCell / 5);
 		memset(&g_pObjectManager->m_stMobData.Carry[pMsg->SourPos], 0, sizeof(STRUCT_ITEM));
 	}
 	else if (pMsg->SourType == 2)
 	{
-		pGridItem = static_cast<SGridControl*>(m_pControlContainer->FindControl(65690))->PickupAtItem(pMsg->SourPos % 5, pMsg->SourPos / 5);
+		int nPage = pMsg->SourPos / 40;
+		int nCell = pMsg->SourPos % 40;
+		pGridItem = static_cast<SGridControl*>(m_pControlContainer->FindControl(67328 + nPage))->PickupAtItem(nCell % 5, nCell / 5);
 		memset(&g_pObjectManager->m_stItemCargo[pMsg->SourPos], 0, sizeof(STRUCT_ITEM));
 	}
 
@@ -25039,8 +25111,8 @@ int TMFieldScene::OnPacketSwapItem(MSG_STANDARD* pStd)
 	}
 	else if (pSwapItem->SourType == 1)
 	{
-		pSrcGrid = m_pGridInvList[pSwapItem->SourPos / 15];
-		pSrcItem = pSrcGrid->PickupAtItem(pSwapItem->SourPos % 15 % 5, pSwapItem->SourPos % 15 / 5);
+		pSrcGrid = m_pGridInvList[CarryPage(pSwapItem->SourPos)];
+		pSrcItem = pSrcGrid->PickupAtItem(CarryCellX(pSwapItem->SourPos), CarryCellY(pSwapItem->SourPos));
 		memset(&g_pObjectManager->m_stMobData.Carry[pSwapItem->SourPos], 0, sizeof(STRUCT_ITEM));
 	}
 	else if (pSwapItem->SourType == 2)
@@ -25080,8 +25152,8 @@ int TMFieldScene::OnPacketSwapItem(MSG_STANDARD* pStd)
 	}
 	else if (pSwapItem->DestType == 1)
 	{
-		pDestGrid = m_pGridInvList[pSwapItem->DestPos / 15];
-		pDestItem = pDestGrid->PickupAtItem(pSwapItem->DestPos % 15 % 5, pSwapItem->DestPos % 15 / 5);
+		pDestGrid = m_pGridInvList[CarryPage(pSwapItem->DestPos)];
+		pDestItem = pDestGrid->PickupAtItem(CarryCellX(pSwapItem->DestPos), CarryCellY(pSwapItem->DestPos));
 		memset(&g_pObjectManager->m_stMobData.Carry[pSwapItem->DestPos], 0, sizeof(STRUCT_ITEM));
 	}
 	else if (pSwapItem->DestType == 2)
@@ -25117,7 +25189,7 @@ int TMFieldScene::OnPacketSwapItem(MSG_STANDARD* pStd)
 		{
 			if (pDestItem->m_pItem->sIndex > 40)
 			{
-				pSrcGrid->AddItem(pDestItem, pSwapItem->SourPos % 15 % 5, pSwapItem->SourPos % 15 / 5);
+				pSrcGrid->AddItem(pDestItem, CarryCellX(pSwapItem->SourPos), CarryCellY(pSwapItem->SourPos));
 				if (pDestItem)
 					memcpy(&g_pObjectManager->m_stMobData.Carry[pSwapItem->SourPos], pDestItem->m_pItem, sizeof(STRUCT_ITEM));
 				else
@@ -25174,7 +25246,7 @@ int TMFieldScene::OnPacketSwapItem(MSG_STANDARD* pStd)
 		{
 			if (pSrcItem->m_pItem->sIndex > 40)
 			{
-				pDestGrid->AddItem(pSrcItem, pSwapItem->DestPos % 15 % 5, pSwapItem->DestPos % 15 / 5);
+				pDestGrid->AddItem(pSrcItem, CarryCellX(pSwapItem->DestPos), CarryCellY(pSwapItem->DestPos));
 				if (pSrcItem)
 					memcpy(&g_pObjectManager->m_stMobData.Carry[pSwapItem->DestPos], pSrcItem->m_pItem, sizeof(STRUCT_ITEM));
 				else
@@ -25596,9 +25668,9 @@ int TMFieldScene::OnPacketSell(MSG_STANDARD* pStd)
 		}
 		else if (pSell->MyType == 1)
 		{
-			pDestItem = m_pGridInvList[pSell->MyPos / 15]->PickupAtItem(
-				pSell->MyPos % 15 % 5,
-				pSell->MyPos % 15 / 5);
+			pDestItem = m_pGridInvList[CarryPage(pSell->MyPos)]->PickupAtItem(
+				CarryCellX(pSell->MyPos),
+				CarryCellY(pSell->MyPos));
 
 			int nPrice = 0;
 
@@ -29055,6 +29127,40 @@ void TMFieldScene::AirMove_Main(unsigned int dwServerTime)
 				RenderDevice::m_fHeightRatio * 111.0f);
 		}
 	}
+
+	// HUD 7.543: campo de digitacao na moldura do chat.
+	if (m_pEditChatPanel && m_pEditChat && m_pChatPanel)
+	{
+		// A moldura do chat so aparece enquanto se digita, como no 7.543.
+		static float s_fChatPanelY = 0.0f;
+		bool bTyping = g_nKeyType == 0 ? m_pEditChatPanel->IsVisible() == 1 : strlen(m_pEditChat->GetText()) > 0;
+		if (m_pChatPanel->m_nPosY > -1000.0f)
+			s_fChatPanelY = m_pChatPanel->m_nPosY;
+		m_pChatPanel->m_nPosY = bTyping ? s_fChatPanelY : -3000.0f;
+		if (bTyping)
+			m_pChatPanel->SetVisible(1); // o jogo a esconde ao abrir o campo de digitacao
+
+		if (m_pChatListnotice)
+			m_pChatListnotice->m_nPosX = (float)g_pDevice->m_dwScreenWidth - (348.0f * RenderDevice::m_fWidthRatio);
+
+		m_pEditChat->SetPos(RenderDevice::m_fWidthRatio * 63.0f, RenderDevice::m_fHeightRatio * 25.0f);
+		m_pEditChatPanel->SetPos(m_pChatPanel->m_nPosX, m_pChatPanel->m_nPosY);
+
+		if (m_pChatBack)
+			m_pChatBack->SetVisible(bTyping ? 1 : 0);
+		if (m_pChatList && m_pChatList->m_pScrollBar)
+			m_pChatList->m_pScrollBar->SetVisible(bTyping ? 1 : 0);
+
+		// Icones do modo automatico logo acima da barra, ao lado da esfera de HP.
+		if (m_pccmode)
+		{
+			m_pccmode->SetPos(128.0f * RenderDevice::m_fWidthRatio, bTyping ? -3000.0f :
+				(float)g_pDevice->m_dwScreenHeight - (108.0f * RenderDevice::m_fHeightRatio));
+		}
+	}
+
+	UpdateClassicGold(m_pControlContainer, m_pMoney1, 9100100);
+	UpdateClassicGold(m_pControlContainer, m_pCargoCoin, 9100110);
 
 	// TODO: change the state to enum
 	if (m_nAirMove_State && m_pMyHuman)

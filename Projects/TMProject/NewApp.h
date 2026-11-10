@@ -59,6 +59,7 @@ public:
     HWND GetSafeHwnd();
     void SwitchWebBrowserState(int nEmptyCargo);
     void SwitchWebBoard();
+    void OpenRegisterPage(const char* szUrl);
     DWORD GetHttpRequest(char* httpname, char* Request, int MaxBuffer);
     void MixHelp();
     int BASE_Initialize_NewServerList();

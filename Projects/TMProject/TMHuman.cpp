@@ -4286,9 +4286,9 @@ int TMHuman::OnPacketSendItem(MSG_STANDARD* pStd)
             memcpy(&pMobData->Carry[pSendItem->DestPos], &pSendItem->Item, sizeof(STRUCT_ITEM));
             memcpy(g_pObjectManager->m_stMobData.Carry, pMobData->Carry, sizeof(g_pObjectManager->m_stMobData.Carry));
 
-            int Page = pSendItem->DestPos / 15;
-            int CellIndexX = pSendItem->DestPos % 15 % 5;
-            int CellIndexY = pSendItem->DestPos % 15 / 5;
+            int Page = CarryPage(pSendItem->DestPos);
+            int CellIndexX = CarryCellX(pSendItem->DestPos);
+            int CellIndexY = CarryCellY(pSendItem->DestPos);
 
             if (Page >= 0 && Page <= 3)
             {
@@ -4868,7 +4868,7 @@ int TMHuman::OnPacketSetHpMp(MSG_SetHpMp* pStd)
         if (pFScene->m_pMaxHPText)
         {
             char szHP[32]{};
-            sprintf(szHP, "/ %lld", m_stScore.MaxHp);
+            sprintf(szHP, "%lld", m_stScore.MaxHp);
             if (pFScene->m_pMaxHPText)
                 pFScene->m_pMaxHPText->SetText(szHP, 0);
         }
@@ -4882,7 +4882,7 @@ int TMHuman::OnPacketSetHpMp(MSG_SetHpMp* pStd)
         if (pFScene->m_pMaxMPText)
         {
             char szMP[32]{};
-            sprintf(szMP, "/ %lld", m_stScore.MaxMp);
+            sprintf(szMP, "%lld", m_stScore.MaxMp);
             if (pFScene->m_pMaxMPText)
                 pFScene->m_pMaxMPText->SetText(szMP, 0);
         }
@@ -5472,9 +5472,9 @@ int TMHuman::OnPacketCarry(MSG_Carry* pStd)
         //pScene->m_pControlContainer->FindControl(65554u);
         for (int nCarryIndex = 0; nCarryIndex < 63; ++nCarryIndex)
         {
-            if (nCarryIndex / 15 < 4)
+            if (CarryPage(nCarryIndex) < 4)
             {
-                auto pPickupItem = pScene->m_pGridInvList[nCarryIndex / 15]->PickupAtItem(nCarryIndex % 15 % 5, nCarryIndex % 15 / 5);
+                auto pPickupItem = pScene->m_pGridInvList[CarryPage(nCarryIndex)]->PickupAtItem(CarryCellX(nCarryIndex), CarryCellY(nCarryIndex));
                 if (g_pCursor->m_pAttachedItem && g_pCursor->m_pAttachedItem == pPickupItem)
                     g_pCursor->m_pAttachedItem = 0;
 
@@ -5497,8 +5497,8 @@ int TMHuman::OnPacketCarry(MSG_Carry* pStd)
                 {
                     memset(pItemCarry, 0, sizeof(STRUCT_ITEM));
                     memcpy(pItemCarry, &pStd->Carry[nCarryIndex], sizeof(STRUCT_ITEM));
-                    if (nCarryIndex / 15 < 4)
-                        pScene->m_pGridInvList[nCarryIndex / 15]->AddItem(new SGridControlItem(0, pItemCarry, 0.0f, 0.0f), nCarryIndex % 15 % 5, nCarryIndex % 15 / 5);
+                    if (CarryPage(nCarryIndex) < 4)
+                        pScene->m_pGridInvList[CarryPage(nCarryIndex)]->AddItem(new SGridControlItem(0, pItemCarry, 0.0f, 0.0f), CarryCellX(nCarryIndex), CarryCellY(nCarryIndex));
                 }
             }
         }
@@ -12227,7 +12227,7 @@ void TMHuman::Punched(long long nDamage, TMVector2 vecFrom)
             if (pFScene->m_pMaxHPText)
             {
                 char szHP[32]{};
-                sprintf(szHP, "/ %lld", m_stScore.MaxHp);
+                sprintf(szHP, "%lld", m_stScore.MaxHp);
                 pFScene->m_pMaxHPText->SetText(szHP, 0);
             }
             if (pFScene->m_pCurrentMPText)
@@ -12239,7 +12239,7 @@ void TMHuman::Punched(long long nDamage, TMVector2 vecFrom)
             if (pFScene->m_pMaxMPText)
             {
                 char szMP[32]{};
-                sprintf(szMP, "/ %lld", m_stScore.MaxMp);
+                sprintf(szMP, "%lld", m_stScore.MaxMp);
                 pFScene->m_pMaxMPText->SetText(szMP, 0);
             }
             if (pFScene->m_pCurrentMHPText && m_pMountHPBar)
@@ -12367,7 +12367,7 @@ void TMHuman::Punched(long long nDamage, TMHuman* pFrom)
             if (pFScene->m_pMaxHPText)
             {
                 char szHP[32]{};
-                sprintf(szHP, "/ %lld", m_stScore.MaxHp);
+                sprintf(szHP, "%lld", m_stScore.MaxHp);
                 pFScene->m_pMaxHPText->SetText(szHP, 0);
             }
             if (pFScene->m_pCurrentMPText)
@@ -12379,7 +12379,7 @@ void TMHuman::Punched(long long nDamage, TMHuman* pFrom)
             if (pFScene->m_pMaxMPText)
             {
                 char szMP[32]{};
-                sprintf(szMP, "/ %lld", m_stScore.MaxMp);
+                sprintf(szMP, "%lld", m_stScore.MaxMp);
                 pFScene->m_pMaxMPText->SetText(szMP, 0);
             }
             if (pFScene->m_pCurrentMHPText && m_pMountHPBar)
