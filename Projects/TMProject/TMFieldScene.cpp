@@ -2652,6 +2652,9 @@ int TMFieldScene::InitializeScene()
 // -1 quando a lista nao a tem.
 static int s_nServerMoveExitRow = -1;
 
+// Proxima ordenacao do botao do inventario: 0 = A-Z, 1 = Z-A (a dica em SGrid.cpp le este valor).
+int g_nInvSortDesc = 0;
+
 // Acoes dos botoes do inventario (servidor: opcode 0xF40, Parm 1 destruir, 2/3 ordenar, 4 largar).
 static void SendInvAction(int nAction)
 {
@@ -2704,11 +2707,19 @@ int TMFieldScene::OnControlEvent(unsigned int idwControlID, unsigned int idwEven
 	}
 	if (idwControlID == 9100202)
 	{
-		static bool s_bSortDesc = false;
-		SendInvAction(s_bSortDesc ? 3 : 2);
-		s_bSortDesc = !s_bSortDesc;
-		if (auto pButton = (SButton*)m_pControlContainer->FindControl(9100202))
-			pButton->SetText((char*)(s_bSortDesc ? "Z-A" : "A-Z"));
+		// 5 s entre duas ordenacoes (o servidor exige o mesmo).
+		static unsigned int s_dwLastSort = 0;
+		if (s_dwLastSort != 0 && dwServerTime < s_dwLastSort + 5000)
+		{
+			char szWait[64]{};
+			sprintf_s(szWait, "Aguarde %u segundos para organizar novamente.", (s_dwLastSort + 5000 - dwServerTime + 999) / 1000);
+			m_pMessagePanel->SetMessage(szWait, 2000);
+			m_pMessagePanel->m_bVisible = 1;
+			return 1;
+		}
+		s_dwLastSort = dwServerTime;
+		SendInvAction(g_nInvSortDesc ? 3 : 2);
+		g_nInvSortDesc = !g_nInvSortDesc;
 		return 1;
 	}
 	if (idwControlID == 9100203)
@@ -8475,49 +8486,15 @@ int TMFieldScene::FrameMove(unsigned int dwServerTime)
 	//m_pGridSkillBelt2->SetSize(325.0f, 40.0f);
 	if (btnPass && btnMissao)
 	{
-		auto res = RenderDevice::m_fResBase;
-		if(res == 1)
-		{
-			btnMissao->SetPos(RenderDevice::m_fWidthRatio * 50.0f,
-				RenderDevice::m_fHeightRatio * 515.0f);
-
-			btnPass->SetPos(RenderDevice::m_fWidthRatio * 15.0f,
-				RenderDevice::m_fHeightRatio * 515.0f);
-		}
-		else if (res == 2)
-		{
-			btnMissao->SetPos(RenderDevice::m_fWidthRatio * 70.0f,
-				RenderDevice::m_fHeightRatio * 585.0f);
-
-			btnPass->SetPos(RenderDevice::m_fWidthRatio * 15.0f,
-				RenderDevice::m_fHeightRatio * 585.0f);
-		}
-		else if (res == 3)
-		{
-			btnMissao->SetPos(RenderDevice::m_fWidthRatio * 70.0f,
-				RenderDevice::m_fHeightRatio * 685.0f);
-
-			btnPass->SetPos(RenderDevice::m_fWidthRatio * 15.0f,
-				RenderDevice::m_fHeightRatio * 685.0f);
-		}
-		else if (res == 4)
-		{
-			btnMissao->SetPos(RenderDevice::m_fWidthRatio * 70.0f,
-				RenderDevice::m_fHeightRatio * 525.0f);
-
-			btnPass->SetPos(RenderDevice::m_fWidthRatio * 15.0f,
-				RenderDevice::m_fHeightRatio * 525.0f);
-		}
-		else if (res == 5)
-		{
-			btnMissao->SetPos(RenderDevice::m_fWidthRatio * 70.0f,
-				RenderDevice::m_fHeightRatio * 685.0f);
-
-			btnPass->SetPos(RenderDevice::m_fWidthRatio * 15.0f,
-				RenderDevice::m_fHeightRatio * 685.0f);
-		}
-	}
-	if (pReconectData.ReconectStatus == true)
+		// HUD classico: as posicoes antigas (canto inferior esquerdo) ficam atras da esfera de HP.
+		// Pass e Missao vao na mesma linha dos botoes automaticos (acima da barra), logo apos o >>.
+		float fRowY = (RenderDevice::m_fResHeightBase - 121.0f) * RenderDevice::m_fHeightRatio;
+		float fRowH = 30.0f * RenderDevice::m_fHeightRatio;
+		float fX = 289.0f * RenderDevice::m_fWidthRatio;
+		btnPass->SetPos(fX, fRowY + (fRowH - btnPass->m_nHeight) / 2.0f);
+		btnMissao->SetPos(fX + btnPass->m_nWidth + 3.0f * RenderDevice::m_fWidthRatio,
+			fRowY + (fRowH - btnMissao->m_nHeight) / 2.0f);
+	}	if (pReconectData.ReconectStatus == true)
 	{ 
 		if (pReconectTime == 0)
 		{

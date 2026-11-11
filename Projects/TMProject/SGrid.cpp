@@ -166,6 +166,17 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 				nView = nViewY * ClassicColumns() + nViewX;
 		}
 
+		// Botoes do inventario nas 3 ultimas celulas (ver ClassicInvButtonTip).
+		if (IsClassicInv() && nView >= 60 && nView <= 62)
+		{
+			if (ClassicPage() == 0 && dwFlags == 513 && !g_pCursor->m_pAttachedItem)
+			{
+				pFScene->OnControlEvent(9100201 + (nView - 60), 0);
+				return 1;
+			}
+			return 0;
+		}
+
 		// So a pagina dona da celula responde; as demais agem como um grid fora do cursor.
 		int nSlot = nView;
 		SGridControlItem* pCover = nullptr;
@@ -663,6 +674,21 @@ int SGridControl::OnMouseEvent(unsigned int dwFlags, unsigned int wParam, int nX
 	return 0;
 }
 
+extern int g_nInvSortDesc; // TMFieldScene.cpp: proxima ordenacao do botao do inventario
+
+// Botoes nas 3 ultimas celulas da grade do inventario (slots 60-62, que nao recebem item):
+// destruir tudo, ordenar e largar tudo. Desenhados pela pagina 0; o clique vai para
+// TMFieldScene::OnControlEvent (9100201-9100203). Icones: sets 862-864 (MainBox2.wyt).
+static const char* ClassicInvButtonTip(int nButton)
+{
+	switch (nButton)
+	{
+	case 0: return "Destruir tudo";
+	case 1: return g_nInvSortDesc ? "Ordenar (Z-A)" : "Ordenar (A-Z)";
+	default: return "Largar tudo no chao";
+	}
+}
+
 void SGridControl::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int inParentLayer, int nFlag)
 {
 	m_GCPanel.nPosX = ivParentPos.x + m_nPosX;
@@ -703,6 +729,43 @@ void SGridControl::FrameMove2(stGeomList* pDrawList, TMVector2 ivParentPos, int 
 			m_GCEnable.nLayer = inParentLayer;
 			m_GCEnable.dwColor = bFits ? 0x4400C040 : 0x66FF6060;
 			AddRenderControlItem(pDrawList, &m_GCEnable, inParentLayer);
+		}
+	}
+
+	if (IsClassicInv() && ClassicPage() == 0)
+	{
+		static GeomControl s_GCButton[3];
+		static GeomControl s_GCHover;
+		static SText* s_pTip = nullptr;
+		float fGridX = ivParentPos.x + m_nPosX;
+		float fGridY = ivParentPos.y + m_nPosY;
+		float fCellW = m_nWidth / (float)ClassicColumns();
+		float fCellH = m_nHeight / (float)ClassicRows();
+		float fRowY = fGridY + 6.0f * fCellH;
+		for (int i = 0; i < 3; ++i)
+		{
+			s_GCButton[i] = GeomControl(RENDERCTRLTYPE::RENDER_IMAGE_STRETCH, -(862 + i), fGridX + (float)(6 + i) * fCellW + 1.0f,
+				fRowY + 1.0f, fCellW - 2.0f, fCellH - 2.0f, inParentLayer, 0xFFFFFFFF);
+			AddRenderControlItem(pDrawList, &s_GCButton[i], inParentLayer);
+		}
+
+		float fMouseX = (float)g_pCursor->m_nPosX;
+		float fMouseY = (float)g_pCursor->m_nPosY;
+		int nOver = (int)floorf((fMouseX - fGridX) / fCellW) - 6;
+		if (!pHeld && nOver >= 0 && nOver < 3 && fMouseY >= fRowY && fMouseY < fRowY + fCellH)
+		{
+			float fX = fGridX + (float)(6 + nOver) * fCellW;
+			s_GCHover = GeomControl(RENDERCTRLTYPE::RENDER_IMAGE_STRETCH, -2, fX, fRowY, fCellW, fCellH, inParentLayer, 0x40FFFFFF);
+			AddRenderControlItem(pDrawList, &s_GCHover, inParentLayer);
+
+			if (s_pTip == nullptr)
+				s_pTip = new SText(-1, "", 0xFFFFFFFF, 0.0f, 0.0f, 120.0f, 16.0f, 1, 0xDD000000, 1, 0);
+			char szTip[32]{};
+			strcpy_s(szTip, ClassicInvButtonTip(nOver));
+			s_pTip->SetText(szTip, 0);
+			s_pTip->m_nWidth = (float)strlen(szTip) * 7.0f + 16.0f;
+			// Acima da celula, alinhado a direita para nao sair do painel.
+			s_pTip->FrameMove2(pDrawList, TMVector2(fX + fCellW - s_pTip->m_nWidth, fRowY - 18.0f), inParentLayer, 0);
 		}
 	}
 

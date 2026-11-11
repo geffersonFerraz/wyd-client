@@ -670,37 +670,16 @@ static void AddClassicHudArt(SControlContainer* pContainer)
 	}
 }
 
-// Botoes nas 3 ultimas celulas da grade do inventario (slots 60-62, que nao recebem item):
-// destruir tudo, ordenar (A-Z / Z-A) e largar tudo no chao. Tratados em TMFieldScene::OnControlEvent.
-static void AddClassicInvButtons(SControlContainer* pContainer)
+// O controle com este pai fica dentro da barra do HUD (65628)? Os botoes so-texto de outras
+// janelas (ex.: Coletar/Aceitar/Rejeitar da missao) tambem usam textura -2 e cor 0 e precisam do rotulo.
+static bool IsInsideClassicBar(SControlContainer* pContainer, int nParentID)
 {
-	auto pGrid = static_cast<SControl*>(pContainer->FindControl(67072));
-	if (pGrid == nullptr || pGrid->m_pTop == nullptr)
-		return;
-
-	const float fCellW = pGrid->m_nWidth / 9.0f;
-	const float fCellH = pGrid->m_nHeight / 7.0f;
-	const struct { unsigned int dwID; const char* szLabel; const char* szTip; } stButtons[] =
+	for (TreeNode* pNode = nParentID ? pContainer->FindControl(nParentID) : nullptr; pNode != nullptr && pNode != pContainer->m_pControlRoot && pNode != static_cast<TreeNode*>(pContainer); pNode = pNode->m_pTop)
 	{
-		{ 9100201, "Del", "Destruir tudo" }, { 9100202, "A-Z", "Ordenar" }, { 9100203, "Drp", "Largar tudo no chao" },
-	};
-	for (int i = 0; i < 3; ++i)
-	{
-		char szLabel[8]{};
-		strcpy_s(szLabel, stButtons[i].szLabel);
-		auto pButton = new SButton(-1, pGrid->m_nPosX + (6 + i) * fCellW + 1.0f, pGrid->m_nPosY + 6 * fCellH + 1.0f,
-			fCellW - 2.0f, fCellH - 2.0f, 0xAA402010, 1, szLabel);
-		pButton->SetControlID(stButtons[i].dwID);
-		pButton->SetEventListener(static_cast<IEventListener*>(pContainer));
-		if (pButton->m_pAltText)
-		{
-			char szTip[32]{};
-			strcpy_s(szTip, stButtons[i].szTip);
-			pButton->m_pAltText->SetText(szTip, 0);
-			pButton->m_pAltText->m_nWidth = (float)strlen(szTip) * 8.0f;
-		}
-		AddClassicChildOnTop(pGrid->m_pTop, pButton);
+		if (static_cast<SControl*>(pNode)->m_dwControlID == 65628)
+			return true;
 	}
+	return false;
 }
 
 static void ApplyClassicInventoryLayout(const char* szBinFileName, int nID, int& nX, int& nY, int& nWidth, int& nHeight,
@@ -728,9 +707,10 @@ static void ApplyClassicInventoryLayout(const char* szBinFileName, int nID, int&
 		{ 65550, 60, 138, 23, 23 }, { 65551, 144, 138, 23, 23 }, { 65552, 60, 192, 23, 23 }, { 65553, 144, 192, 23, 23 },
 		{ 65555, 90, 32, 47, 47 }, { 65556, 174, 48, 47, 95 }, { 65557, 6, 48, 47, 95 }, { 65558, 90, 88, 47, 47 },
 		{ 65559, 90, 144, 47, 71 }, { 65560, 6, 152, 47, 47 }, { 65561, 174, 152, 47, 47 },
-		// Slots extras do 7.87 abaixo da grade, ao lado da lixeira rapida (as 3 ultimas
-		// celulas da grade sao os botoes do inventario: ver AddClassicInvButtons)
-		{ 1048976, 100, 395, 22, 22 }, { 1048977, 124, 395, 22, 22 }, { 1048978, 148, 395, 22, 22 }, { 67080, 172, 395, 22, 22 },
+		// Slots extras do 7.87 (cinto e colar a esquerda, traje de montaria a direita) nas faixas
+		// de pedra acima da grade; as 3 ultimas celulas da grade sao os botoes do inventario
+		// (SGridControl::FrameMove2). Lixeira rapida ao lado do ouro.
+		{ 1048976, 6, 202, 20, 20 }, { 1048977, 28, 202, 20, 20 }, { 1048978, 202, 202, 20, 20 }, { 67080, 172, 395, 22, 22 },
 		// Honra e cash abaixo da grade
 		{ 1048981, 6, 395, 50, 12 }, { 1048982, 6, 406, 50, 12 },
 
@@ -1029,7 +1009,8 @@ int TMScene::ReadRCBin(char* szBinFileName)
 			/*texto no btn*/
 			char strbuf[128]{};
 			sprintf_s(strbuf, "%s", g_UIString[binButtonData.nStringIndex]);
-			if (binButtonData.nTextureSetIndex == -2 && binButtonData.nColor == 0)
+			if (binButtonData.nTextureSetIndex == -2 && binButtonData.nColor == 0 &&
+				IsInsideClassicBar(m_pControlContainer, binButtonData.nParentID))
 				strbuf[0] = 0; // area clicavel sobre a arte da barra: sem rotulo
 
 			auto pButton = new SButton(
@@ -1416,10 +1397,7 @@ int TMScene::ReadRCBin(char* szBinFileName)
 	}
 
 	if (strstr(szBinFileName, "FieldScene2") != nullptr)
-	{
 		AddClassicHudArt(m_pControlContainer);
-		AddClassicInvButtons(m_pControlContainer);
-	}
 
 	fclose(fpBinary);
 
