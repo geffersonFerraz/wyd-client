@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -60,14 +62,16 @@ type updateFile struct {
 	path  string
 	size  int
 	check func([]byte) error
+	// pin ajusta o arquivo baixado ao endereço das Configurações (opcional).
+	pin func(data []byte, address string) []byte
 }
 
 var updateFiles = []updateFile{
 	{serverListFile, "/serverlist.bin", serverListSize, func(b []byte) error {
 		_, err := serverBase(b) // Sem endereço, a próxima abertura não acharia o servidor.
 		return err
-	}},
-	{itemListFile, "/itemlist.bin", itemListSize, func([]byte) error { return nil }},
+	}, rewriteServerList},
+	{itemListFile, "/itemlist.bin", itemListSize, func([]byte) error { return nil }, nil},
 }
 
 // Progress é o estado que a janela mostra.
@@ -144,13 +148,16 @@ func (u *updater) download(address string, size int, progress func(float64)) ([]
 	return data, nil
 }
 
-func (u *updater) fetch(base string, f updateFile, progress func(float64)) error {
+func (u *updater) fetch(base, address string, f updateFile, progress func(float64)) error {
 	data, err := u.download(base+f.path, f.size, progress)
 	if err != nil {
 		return err
 	}
 	if err := f.check(data); err != nil {
 		return err
+	}
+	if f.pin != nil && address != "" {
+		data = f.pin(data, address)
 	}
 	return replaceFile(localPath(u.dir, f.name), data)
 }
@@ -166,23 +173,49 @@ func (u *updater) localReady() bool {
 	return true
 }
 
-// run baixa os arquivos na ordem. Se o servidor falhar, as cópias locais servem:
-// uma queda do site não pode impedir quem já tem o jogo de abri-lo.
-func (u *updater) run() {
-	local, err := os.ReadFile(localPath(u.dir, serverListFile))
-	if err != nil {
-		u.report(Progress{Status: serverListFile + " não encontrado. Extraia o jogo novamente.", Done: true})
+// updateMu impede duas atualizações ao mesmo tempo: trocar o endereço nas
+// Configurações dispara outra enquanto a primeira ainda pode estar rodando.
+var updateMu sync.Mutex
+
+// pinLocalList põe o endereço das Configurações no serverlist.bin local, para o
+// jogo abrir no IP certo mesmo quando o download falhar.
+func (u *updater) pinLocalList(address string) {
+	path := localPath(u.dir, serverListFile)
+	local, err := os.ReadFile(path)
+	if err != nil || len(local) != serverListSize {
 		return
 	}
-	base, err := serverBase(local)
-	if err != nil {
-		u.report(Progress{Status: serverListFile + " inválido. Extraia o jogo novamente.", Done: true})
-		return
+	if pinned := rewriteServerList(local, address); !bytes.Equal(pinned, local) {
+		replaceFile(path, pinned)
+	}
+}
+
+// run baixa os arquivos na ordem. Se o servidor falhar, as cópias locais servem:
+// uma queda do site não pode impedir quem já tem o jogo de abri-lo. O endereço
+// vem das Configurações do launcher (Servidor.txt) ou, sem ele, do serverlist.bin.
+func (u *updater) run() {
+	updateMu.Lock()
+	defer updateMu.Unlock()
+	address := loadServerAddress(u.dir)
+	var base string
+	if address != "" {
+		base = "http://" + address
+		u.pinLocalList(address)
+	} else {
+		local, err := os.ReadFile(localPath(u.dir, serverListFile))
+		if err != nil {
+			u.report(Progress{Status: serverListFile + " não encontrado. Extraia o jogo novamente ou informe o servidor em Configuração.", Done: true})
+			return
+		}
+		if base, err = serverBase(local); err != nil {
+			u.report(Progress{Status: serverListFile + " inválido. Extraia o jogo novamente ou informe o servidor em Configuração.", Done: true})
+			return
+		}
 	}
 	for i, f := range updateFiles {
 		status := "Baixando " + f.name + "..."
 		var last Progress
-		err := u.fetch(base, f, func(part float64) {
+		err := u.fetch(base, address, f, func(part float64) {
 			last = Progress{File: part, Total: (float64(i) + part) / float64(len(updateFiles)), Status: status}
 			u.report(last)
 		})

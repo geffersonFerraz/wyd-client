@@ -1,11 +1,41 @@
 #include "pch.h"
 #include "CPSock.h"
 #include <winsock2.h>
+#include <ws2tcpip.h>
+#include <map>
+#include <string>
 #include "Basedef.h"
 #include "TMGlobal.h"
 #include "TMLog.h"
 
 int ConnectPort = 0;
+
+// Endereco IPv4 de um IP em texto ou de um nome DNS (o serverlist.bin pode
+// trazer nomes). Nomes sao resolvidos uma vez e guardados: a lista de canais
+// mede o ping de todos a cada abertura. Devolve INADDR_NONE se nao resolver.
+static ULONG ResolveHostAddress(const char* HostAddr)
+{
+	ULONG addr = inet_addr(HostAddr);
+	if (addr != INADDR_NONE)
+		return addr;
+
+	static std::map<std::string, ULONG> cache;
+	auto found = cache.find(HostAddr);
+	if (found != cache.end())
+		return found->second;
+
+	addrinfo hints = {};
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	addrinfo* result = nullptr;
+	if (getaddrinfo(HostAddr, nullptr, &hints, &result) != 0 || !result)
+		return INADDR_NONE;
+
+	addr = reinterpret_cast<sockaddr_in*>(result->ai_addr)->sin_addr.S_un.S_addr;
+	freeaddrinfo(result);
+	cache[HostAddr] = addr;
+	return addr;
+}
 
 unsigned char pKeyWord[512] = { // 7.xx keys
     0x84, 0x87, 0x37, 0xd7, 0xea, 0x79, 0x91, 0x7d, 0x4b, 0x4b, 0x85, 0x7d, 0x87, 0x81, 0x91, 0x7c, 0x0f, 0x73, 0x91, 0x91, 0x87, 0x7d, 0x0d, 0x7d, 0x86, 0x8f, 0x73, 0x0f, 0xe1, 0xdd, 0x85, 0x7d,
@@ -134,7 +164,7 @@ UINT_PTR CPSock::ConnectServer(char* HostAddr, int Port, int ip, int WSA)
 	if (Sock)
 		CloseSocket();
 
-	InAddr.sin_addr.S_un.S_addr = inet_addr(HostAddr);
+	InAddr.sin_addr.S_un.S_addr = ResolveHostAddress(HostAddr);
 	InAddr.sin_family = AF_INET;
 	InAddr.sin_port = htons(Port);
 	SOCKET tSock = socket(2, 1, 0);
@@ -209,7 +239,7 @@ UINT_PTR CPSock::SingleConnect(char* HostAddr, int Port, int ip, int WSA)
 		Sock = NULL;
 	}
 
-	InAddr.sin_addr.S_un.S_addr = inet_addr(HostAddr);
+	InAddr.sin_addr.S_un.S_addr = ResolveHostAddress(HostAddr);
 	InAddr.sin_family = AF_INET;
 	InAddr.sin_port = htons(Port);
 	SOCKET tSock = socket(2, 1, 0);
@@ -485,7 +515,7 @@ int CPSock::MeasurePing(const char* HostAddr, int Port, int ip) {
 	// Configurando a estrutura sockaddr_in
 	sockaddr_in server;
 	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = inet_addr(HostAddr);
+	server.sin_addr.s_addr = ResolveHostAddress(HostAddr);
 	server.sin_port = htons(Port);
 
 	// Conectando ao servidor

@@ -308,9 +308,9 @@ func (l *launcherWindow) applyProgress() {
 	l.mu.Unlock()
 	footer := rect{0, footerY, launcherWidth, launcherHeight}
 	procInvalidateRect.Call(l.hwnd, uintptr(unsafe.Pointer(&footer)), 0)
-	if state.Done && state.Ready {
-		procEnableWindow.Call(l.start, 1)
-	}
+	// Desligado enquanto uma atualização roda, inclusive a que a troca de
+	// servidor nas Configurações dispara.
+	procEnableWindow.Call(l.start, uintptr(boolValue(state.Done && state.Ready)))
 }
 
 func (l *launcherWindow) proc(hwnd, message, wParam, lParam uintptr) uintptr {
@@ -348,8 +348,13 @@ func (l *launcherWindow) proc(hwnd, message, wParam, lParam uintptr) uintptr {
 			}
 			return 0
 		case idOptions:
-			if err := runSettings(hwnd, l.cfg, l.cfgPath); err != nil {
+			changed, err := runSettings(hwnd, l.cfg, l.cfgPath, l.dir)
+			if err != nil {
 				messageBox(err.Error())
+			}
+			if changed {
+				l.setProgress(Progress{Status: "Verificando atualizações..."})
+				go newUpdater(l.dir, l.setProgress).run()
 			}
 			return 0
 		case idCancel, idExit:
@@ -415,11 +420,10 @@ func (l *launcherWindow) setProgress(p Progress) {
 
 // loadPage confere a página fora da thread da janela.
 func (l *launcherWindow) loadPage() {
-	data, err := os.ReadFile(localPath(l.dir, serverListFile))
-	if err != nil || !browserAvailable() {
+	if !browserAvailable() {
 		return
 	}
-	base, err := serverBase(data)
+	base, err := launcherBase(l.dir)
 	if err != nil || !pageAvailable(base) {
 		return
 	}

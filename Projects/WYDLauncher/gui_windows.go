@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"syscall"
 	"unsafe"
 )
@@ -42,6 +43,9 @@ const (
 	wsVisible      = 0x10000000
 	wsTabStop      = 0x00010000
 	wsVScroll      = 0x00200000
+	wsBorder       = 0x00800000
+	esAutoHScroll  = 0x80
+	emLimitText    = 0x00C5
 	wsMainWindow   = 0x00CA0000 | 0x00020000 // WS_CAPTION | WS_SYSMENU, com minimizar.
 	wsExControl    = 0x00010000
 	bsDefault      = 0x1
@@ -79,7 +83,7 @@ const (
 	windowTitle    = "WYD - Configurações"
 	errorTitle     = "WYD"
 	clientWidth    = 400
-	clientHeight   = 416
+	clientHeight   = 478
 	labelX         = 26
 	controlX       = 120
 	controlWidth   = 250
@@ -202,6 +206,10 @@ type window struct {
 	camera     uintptr
 	textures   uintptr
 	chat       uintptr
+	server     uintptr
+	dir        string
+	shownIP    string // Endereço que a caixa mostrou ao abrir.
+	changed    bool   // O servidor mudou: o launcher precisa atualizar de novo.
 	bright     slider
 	sound      slider
 	music      slider
@@ -273,8 +281,14 @@ func (w *window) build() {
 	w.textures = w.addCheck("Texturas comprimidas (usa menos memória)", 296, s.CompressedTextures)
 	w.chat = w.addCheck("Digitar no chat sem apertar Enter", 322, s.ChatAlwaysOn)
 
-	w.add("BUTTON", "Salvar", wsTabStop|bsDefault, clientWidth-204, 372, 90, 30, idOK)
-	w.add("BUTTON", "Cancelar", wsTabStop, clientWidth-102, 372, 90, 30, idCancel)
+	w.add("BUTTON", "Servidor", bsGroup, 12, 362, clientWidth-24, 62, 0)
+	w.add("STATIC", "Endereço IP:", 0, labelX, 388, 90, 18, 0)
+	w.shownIP = currentServerAddress(w.dir)
+	w.server = w.add("EDIT", w.shownIP, wsTabStop|wsBorder|esAutoHScroll, controlX, 384, controlWidth, 22, 0)
+	send(w.server, emLimitText, maxAddressLength, 0)
+
+	w.add("BUTTON", "Salvar", wsTabStop|bsDefault, clientWidth-204, 434, 90, 30, idOK)
+	w.add("BUTTON", "Cancelar", wsTabStop, clientWidth-102, 434, 90, 30, idCancel)
 }
 
 func checked(handle uintptr) bool {
@@ -296,11 +310,35 @@ func (w *window) collect() Settings {
 	}
 }
 
+func (w *window) serverText() string {
+	var buffer [64]uint16
+	procGetWindowText.Call(w.server, uintptr(unsafe.Pointer(&buffer)), uintptr(len(buffer)))
+	return strings.TrimSpace(syscall.UTF16ToString(buffer[:]))
+}
+
 func (w *window) save() {
+	// O endereço é validado antes de gravar qualquer coisa: se estiver errado, a
+	// janela fica aberta para o jogador corrigir.
+	address := w.serverText()
+	if address != w.shownIP && address != "" {
+		normalized, err := normalizeAddress(address)
+		if err != nil {
+			messageBox(err.Error())
+			return
+		}
+		address = normalized
+	}
 	w.cfg.apply(w.collect())
 	if err := w.cfg.save(w.path); err != nil {
 		messageBox(err.Error())
 		return
+	}
+	if address != w.shownIP {
+		if err := saveServerAddress(w.dir, address); err != nil {
+			messageBox(err.Error())
+			return
+		}
+		w.changed = true
 	}
 	w.close()
 }
@@ -396,11 +434,12 @@ var (
 )
 
 // runSettings abre as opções presa à janela dona e volta quando elas fecham.
-func runSettings(owner uintptr, cfg *config, path string) error {
-	w := &window{cfg: cfg, path: path, owner: owner}
+// O resultado diz se o endereço do servidor foi trocado.
+func runSettings(owner uintptr, cfg *config, path, dir string) (bool, error) {
+	w := &window{cfg: cfg, path: path, owner: owner, dir: dir}
 	activeSettings = w
 	if err := w.create(); err != nil {
-		return err
+		return false, err
 	}
 	procEnableWindow.Call(owner, 0)
 	var m msg
@@ -416,5 +455,5 @@ func runSettings(owner uintptr, cfg *config, path string) error {
 		procTranslateMessage.Call(uintptr(unsafe.Pointer(&m)))
 		procDispatchMessage.Call(uintptr(unsafe.Pointer(&m)))
 	}
-	return nil
+	return w.changed, nil
 }

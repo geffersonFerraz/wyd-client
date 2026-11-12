@@ -12,7 +12,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$ROOT/build-linux"
-RELEASE_DIR="${WYD_RELEASE_DIR:-$ROOT/../wyd-others/Release LInux Cliente}"
+RELEASE_DIR="${WYD_RELEASE_DIR:-$ROOT/../wyd-others/Release Cliente}"
 
 export WINEPREFIX="${WINEPREFIX:-$HOME/.local/share/wyd-linux/prefix}"
 

@@ -49,8 +49,8 @@ func writeFile(t *testing.T, path string, data []byte) {
 }
 
 func TestServerBaseKeepsPortAndDropsPath(t *testing.T) {
-	got, err := serverBase(encodeServerList("http://192.168.77.191:8080/serv00.htm"))
-	if err != nil || got != "http://192.168.77.191:8080" {
+	got, err := serverBase(encodeServerList("http://192.168.77.26:8081/serv00.htm"))
+	if err != nil || got != "http://192.168.77.26:8081" {
 		t.Fatalf("%q, %v", got, err)
 	}
 }
