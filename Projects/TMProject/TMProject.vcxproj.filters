@@ -96,6 +96,9 @@
     <ClInclude Include="CPSock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SecureChannel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Basedef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -339,9 +342,6 @@
     <ClInclude Include="TextureManager.h">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="StackWalker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SGrid.h">
       <Filter>Header Files\Engine\UI</Filter>
     </ClInclude>
@@ -354,14 +354,8 @@
     <ClInclude Include="RenderDevice.h">
       <Filter>Header Files\Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Quest.h">
-      <Filter>Header Files\Engine</Filter>
-    </ClInclude>
     <ClInclude Include="ObjectManager.h">
       <Filter>Header Files\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="NewClientB.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="NewApp.h">
       <Filter>Header Files</Filter>
@@ -374,12 +368,6 @@
     </ClInclude>
     <ClInclude Include="MeshManager.h">
       <Filter>Header Files\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="MD5Checksum.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="md5.h">
-      <Filter>Header Files\Util</Filter>
     </ClInclude>
     <ClInclude Include="JBlur.h">
       <Filter>Header Files\Engine</Filter>
@@ -396,23 +384,11 @@
     <ClInclude Include="DirShow.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
-    <ClInclude Include="desbase64.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
     <ClInclude Include="D3DSettings.h">
       <Filter>Header Files\Engine\Core</Filter>
     </ClInclude>
     <ClInclude Include="D3DDevice.h">
       <Filter>Header Files\Engine\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockKeyBoard.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="Base64.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="AES.h">
-      <Filter>Header Files\Util</Filter>
     </ClInclude>
     <ClInclude Include="UIBinary.h">
       <Filter>Header Files\Engine\UI</Filter>
@@ -504,6 +480,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CPSock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SecureChannel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Monocypher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Basedef.cpp">

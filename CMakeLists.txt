@@ -9,7 +9,7 @@ endif()
 
 project(WYD LANGUAGES CXX RC)
 
-set(WYD_RELEASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wyd-others/Release LInux Cliente"
+set(WYD_RELEASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wyd-others/Release Cliente"
     CACHE PATH "Pasta do jogo que recebe o WYD.exe e as DLLs do D3DX")
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -85,7 +85,7 @@ set_source_files_properties("${WYD_SRC}/Basedef.cpp" PROPERTIES
 target_link_directories(WYD PRIVATE "${WYD_D3DX}/Lib64")
 target_link_options(WYD PRIVATE -municode -static)
 target_link_libraries(WYD PRIVATE
-    d3dx9 d3d9 wininet wsock32 ws2_32 dxguid dsound imm32 dinput8 winmm iphlpapi
+    d3dx9 d3d9 wininet wsock32 ws2_32 dxguid dsound imm32 dinput8 winmm iphlpapi bcrypt
     strmiids ole32 oleaut32 uuid gdi32 comdlg32 shell32 advapi32)
 
 add_custom_target(deploy

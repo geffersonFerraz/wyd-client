@@ -1,0 +1,151 @@
+# Release do cliente: ao criar uma tag v* (git tag v1.2.3 && git push origin v1.2.3).
+#
+# Pacotes (só os binários; a arte e os dados ficam na pasta do jogo):
+# - wyd-client-<tag>-windows-x64.zip: WYD.exe (Visual Studio), JogarWYD.exe e as DLLs do D3DX.
+# - wyd-client-<tag>-linux-x64.tar.xz: WYD.exe (mingw-w64), WYD-Linux, JogarWYD.exe,
+#   as DLLs do D3DX e o Wine embutido (./wyd-linux.sh bundle).
+#
+# Os dois vão para a release do GitHub e para o GHCR como artefato OCI:
+#   oras pull ghcr.io/<dono>/wyd-client:<versão>
+#
+# Tags com hífen (v1.2.3-rc1) viram pre-release e não movem a latest.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  windows:
+    needs: test
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: Projects/WYDLauncher/go.mod
+          cache-dependency-path: Projects/WYDLauncher/go.mod
+      - name: Build (Visual Studio)
+        run: powershell -ExecutionPolicy Bypass -File build.ps1
+      - name: Pacote
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          $name = "wyd-client-$env:TAG-windows-x64"
+          New-Item -ItemType Directory -Force "dist\$name" | Out-Null
+          foreach ($f in 'WYD.exe', 'JogarWYD.exe', 'D3DX9_43.dll', 'D3DCompiler_43.dll') {
+            Copy-Item -LiteralPath "Build\x64\Release\$f" -Destination "dist\$name\"
+          }
+          Compress-Archive -Path "dist\$name\*" -DestinationPath "dist\$name.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-windows
+          path: dist/*.zip
+          if-no-files-found: error
+
+  linux:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: Projects/WYDLauncher/go.mod
+          cache-dependency-path: Projects/WYDLauncher/go.mod
+      - name: Dependências
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake make mingw-w64 curl xz-utils
+      - name: Build e pacote
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          name="wyd-client-${TAG}-linux-x64"
+          pkg="$PWD/dist/$name"
+          mkdir -p "$pkg"
+          cmake -S . -B build-linux -DWYD_RELEASE_DIR="$pkg"
+          cmake --build build-linux --target deploy --parallel "$(nproc)"
+          WYD_RELEASE_DIR="$pkg" ./wyd-linux.sh bundle
+          # .tar.xz preserva o bit de execução do WYD-Linux e do Wine.
+          tar -C dist -cJf "dist/$name.tar.xz" "$name"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-linux
+          path: dist/*.tar.xz
+          if-no-files-found: error
+
+  release:
+    needs: [windows, linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum -- * > SHA256SUMS
+      - uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+      - name: Publicar no GHCR
+        working-directory: dist
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          set -euo pipefail
+          owner=$(echo "$REPO_OWNER" | tr '[:upper:]' '[:lower:]')
+          version="${TAG#v}"
+          ref="ghcr.io/$owner/wyd-client"
+          files=()
+          for f in *.zip; do files+=("$f:application/zip"); done
+          for f in *.tar.xz; do files+=("$f:application/x-xz"); done
+          files+=("SHA256SUMS:text/plain")
+          echo "$TOKEN" | oras login ghcr.io -u "$ACTOR" --password-stdin
+          oras push "$ref:$version" \
+            --artifact-type application/vnd.wyd.client.v1 \
+            --annotation "org.opencontainers.image.source=$REPO_URL" \
+            --annotation "org.opencontainers.image.version=$version" \
+            "${files[@]}"
+          case "$version" in
+            *-*) ;;
+            *) oras tag "$ref:$version" latest ;;
+          esac
+      - name: Criar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          owner=$(echo "$REPO_OWNER" | tr '[:upper:]' '[:lower:]')
+          version="${TAG#v}"
+          prerelease=""
+          case "$version" in *-*) prerelease="--prerelease" ;; esac
+          cat > notes.md <<EOF
+          Só os binários: extraia sobre a pasta do jogo (arte, dados e \`serverkey.txt\` não vêm no pacote).
+
+          - Windows: \`wyd-client-$TAG-windows-x64.zip\`, abra o \`JogarWYD.exe\`.
+          - Linux: \`wyd-client-$TAG-linux-x64.tar.xz\` (com o Wine embutido), abra o \`WYD-Linux\`.
+
+          Também no GHCR: \`oras pull ghcr.io/$owner/wyd-client:$version\`
+          EOF
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" --notes-file notes.md --generate-notes $prerelease

@@ -2,6 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,9 +17,13 @@ import (
 	"time"
 )
 
-// Arquivos que o launcher baixa da porta pública do painel a cada abertura. O
+// Arquivos que o launcher mantém iguais aos da porta pública do painel. O
 // endereço vem do próprio serverlist.bin local: a entrada [grupo][0] é a URL do
 // servNN.htm, servida pelo mesmo listener.
+//
+// A cada abertura ele lê o manifest.json do painel (nome, tamanho e SHA-256 de
+// cada arquivo) e só baixa o que mudou. Um painel antigo, sem manifesto, faz o
+// launcher baixar tudo, como antes.
 const (
 	serverListFile  = "serverlist.bin"
 	itemListFile    = "ItemList.bin"
@@ -24,6 +31,14 @@ const (
 	serverListSize  = 10 * serverListGroup // MAX_SERVERGROUP grupos
 	itemListSize    = 6500 * 156           // MAX_ITEMLIST x sizeof(STRUCT_ITEMLIST)
 	launcherPage    = "/launcher/"
+	manifestPath    = "/manifest.json"
+	manifestVersion = 1
+	manifestMaxSize = 64 * 1024
+	manifestTimeout = 10 * time.Second
+	// stateFile guarda o que o launcher baixou por último. O serverlist.bin em
+	// disco pode ter o IP das Configurações, e aí o hash dele nunca é o do
+	// manifesto: por isso o estado tem o hash do servidor e o do arquivo gravado.
+	stateFile       = "launcher-manifest.json"
 	downloadTimeout = 60 * time.Second
 	pageTimeout     = 5 * time.Second
 	readChunk       = 32 * 1024
@@ -148,18 +163,120 @@ func (u *updater) download(address string, size int, progress func(float64)) ([]
 	return data, nil
 }
 
-func (u *updater) fetch(base, address string, f updateFile, progress func(float64)) error {
+// manifestFile é uma entrada do manifest.json do painel.
+type manifestFile struct {
+	Name   string `json:"name"`
+	Path   string `json:"path"`
+	Size   int    `json:"size"`
+	SHA256 string `json:"sha256"`
+}
+
+// fileState é o que ficou em disco no último download de um arquivo.
+type fileState struct {
+	Remote string `json:"remote"` // SHA-256 do arquivo no servidor
+	Local  string `json:"local"`  // SHA-256 do arquivo gravado (difere do Remote com IP fixado)
+	// Address é o endereço das Configurações aplicado ao arquivo. Apagar o
+	// endereço tem de trazer de volta o arquivo do servidor.
+	Address string `json:"address,omitempty"`
+}
+
+func hashOf(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+// fetchManifest devolve as entradas pelo caminho ("/itemlist.bin"). Qualquer
+// falha devolve nil: sem manifesto, tudo é baixado.
+func (u *updater) fetchManifest(base string) map[string]manifestFile {
+	client := *u.client
+	client.Timeout = manifestTimeout
+	res, err := client.Get(base + manifestPath)
+	if err != nil {
+		return nil
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return nil
+	}
+	body, err := io.ReadAll(io.LimitReader(res.Body, manifestMaxSize+1))
+	if err != nil || len(body) > manifestMaxSize {
+		return nil
+	}
+	var doc struct {
+		Version int            `json:"version"`
+		Files   []manifestFile `json:"files"`
+	}
+	if json.Unmarshal(body, &doc) != nil || doc.Version != manifestVersion {
+		return nil
+	}
+	files := make(map[string]manifestFile, len(doc.Files))
+	for _, f := range doc.Files {
+		if len(f.SHA256) == sha256.Size*2 {
+			files[f.Path] = manifestFile{f.Name, f.Path, f.Size, strings.ToLower(f.SHA256)}
+		}
+	}
+	return files
+}
+
+func (u *updater) loadState() map[string]fileState {
+	state := map[string]fileState{}
+	if data, err := os.ReadFile(filepath.Join(u.dir, stateFile)); err == nil {
+		if json.Unmarshal(data, &state) != nil || state == nil {
+			state = map[string]fileState{}
+		}
+	}
+	return state
+}
+
+// saveState não devolve erro: sem o estado, a próxima abertura só baixa de novo.
+func (u *updater) saveState(state map[string]fileState) {
+	if data, err := json.MarshalIndent(state, "", "  "); err == nil {
+		replaceFile(filepath.Join(u.dir, stateFile), data)
+	}
+}
+
+// upToDate diz se o arquivo em disco já é o do manifesto: ou tem o mesmo hash,
+// ou é o que o launcher gravou quando baixou essa mesma versão.
+func (u *updater) upToDate(f updateFile, want manifestFile, last fileState, address string) bool {
+	if want.Size != f.size {
+		return false
+	}
+	data, err := os.ReadFile(localPath(u.dir, f.name))
+	if err != nil || len(data) != f.size || f.check(data) != nil {
+		return false
+	}
+	local := hashOf(data)
+	if f.pin == nil || address == "" {
+		address = ""
+		if local == want.SHA256 {
+			return true
+		}
+	}
+	return last.Remote == want.SHA256 && last.Local == local && last.Address == address
+}
+
+// fetch baixa e grava o arquivo. Com manifesto, o conteúdo tem de bater com o
+// hash anunciado: um download corrompido ou cortado não substitui a cópia local.
+func (u *updater) fetch(base, address string, f updateFile, want *manifestFile, progress func(float64)) (fileState, error) {
 	data, err := u.download(base+f.path, f.size, progress)
 	if err != nil {
-		return err
+		return fileState{}, err
+	}
+	remote := hashOf(data)
+	if want != nil && remote != want.SHA256 {
+		return fileState{}, fmt.Errorf("%s: conteúdo diferente do manifesto", f.name)
 	}
 	if err := f.check(data); err != nil {
-		return err
+		return fileState{}, err
 	}
+	pinned := ""
 	if f.pin != nil && address != "" {
-		data = f.pin(data, address)
+		data, pinned = f.pin(data, address), address
 	}
-	return replaceFile(localPath(u.dir, f.name), data)
+	if err := replaceFile(localPath(u.dir, f.name), data); err != nil {
+		return fileState{}, err
+	}
+	return fileState{Remote: remote, Local: hashOf(data), Address: pinned}, nil
 }
 
 // localReady diz se os arquivos em disco bastam para abrir o jogo.
@@ -190,7 +307,8 @@ func (u *updater) pinLocalList(address string) {
 	}
 }
 
-// run baixa os arquivos na ordem. Se o servidor falhar, as cópias locais servem:
+// run atualiza os arquivos na ordem, pulando os que o manifesto diz que já
+// estão iguais. Se o servidor falhar, as cópias locais servem:
 // uma queda do site não pode impedir quem já tem o jogo de abri-lo. O endereço
 // vem das Configurações do launcher (Servidor.txt) ou, sem ele, do serverlist.bin.
 func (u *updater) run() {
@@ -212,13 +330,33 @@ func (u *updater) run() {
 			return
 		}
 	}
+	u.report(Progress{Status: "Verificando atualizações..."})
+	manifest := u.fetchManifest(base)
+	state := u.loadState()
+	changed := false
+	defer func() {
+		if changed {
+			u.saveState(state)
+		}
+	}()
 	for i, f := range updateFiles {
+		var want *manifestFile
+		if entry, ok := manifest[f.path]; ok {
+			want = &entry
+			if u.upToDate(f, entry, state[f.name], address) {
+				u.report(Progress{File: 1, Total: float64(i+1) / float64(len(updateFiles)), Status: f.name + " já está atualizado."})
+				continue
+			}
+		}
 		status := "Baixando " + f.name + "..."
 		var last Progress
-		err := u.fetch(base, address, f, func(part float64) {
+		saved, err := u.fetch(base, address, f, want, func(part float64) {
 			last = Progress{File: part, Total: (float64(i) + part) / float64(len(updateFiles)), Status: status}
 			u.report(last)
 		})
+		if err == nil {
+			state[f.name], changed = saved, true
+		}
 		if err != nil {
 			last.Done, last.Ready = true, u.localReady()
 			last.Status = "Não foi possível baixar " + f.name + ". Verifique a conexão e abra o jogo novamente."
