@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SecureChannel.h"
+
 #define RECV_BUFFER_SIZE 131072
 #define SEND_BUFFER_SIZE 131072
 
@@ -31,6 +33,9 @@ public:
 	void RefreshRecvBuffer();
 	void RefreshSendBuffer();
 
+	// Troca de chaves com o servidor, logo depois do INIT_CODE (SecureChannel.h).
+	bool SecureHandshake(UINT_PTR tSock);
+
 	UINT_PTR Sock;
 	char* pSendBuffer;
 	char* pRecvBuffer;
@@ -40,6 +45,12 @@ public:
 	int nSentPosition;
 	int Init;
 
+	// Chaves desta conexao e a mensagem de janela que avisa do socket.
+	SecureChannel Secure;
+	int nNotifyMsg;
+
+	// Sequencia de KeyWord da cifra antiga. O transporte seguro nao a usa;
+	// ficam porque a selecao de personagem ainda as preenche.
 	char SendQueue[MAX_KEYWORD_QUEUE];
 	char RecvQueue[MAX_KEYWORD_QUEUE];
 

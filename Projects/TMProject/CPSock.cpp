@@ -2,13 +2,46 @@
 #include "CPSock.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <bcrypt.h>
 #include <map>
 #include <string>
 #include "Basedef.h"
 #include "TMGlobal.h"
 #include "TMLog.h"
 
+#ifdef _MSC_VER
+#pragma comment(lib, "bcrypt.lib")
+#endif
+
 int ConnectPort = 0;
+
+constexpr int SECURE_HANDSHAKE_TIMEOUT_MS = 5000;
+
+// Le a chave publica do servidor de serverkey.txt, na pasta do jogo.
+static bool LoadServerKey(uint8_t key[SECURE_KEY_SIZE])
+{
+	FILE* fp = nullptr;
+	fopen_s(&fp, ServerKey_Path, "rb");
+	if (!fp)
+		return false;
+	char text[2 * SECURE_KEY_SIZE + 16] = { 0 };
+	fread(text, 1, sizeof(text) - 1, fp);
+	fclose(fp);
+	return SecureParseKey(text, key);
+}
+
+static bool RecvAll(SOCKET tSock, uint8_t* buffer, int size)
+{
+	int got = 0;
+	while (got < size)
+	{
+		int n = recv(tSock, (char*)buffer + got, size - got, 0);
+		if (n <= 0)
+			return false;
+		got += n;
+	}
+	return true;
+}
 
 // Endereco IPv4 de um IP em texto ou de um nome DNS (o serverlist.bin pode
 // trazer nomes). Nomes sao resolvidos uma vez e guardados: a lista de canais
@@ -60,6 +93,7 @@ CPSock::CPSock()
 {
 	Sock = NULL;
 	Init = 0;
+	nNotifyMsg = 0;
 	pSendBuffer = (char*)malloc(SEND_BUFFER_SIZE);
 	pRecvBuffer = (char*)malloc(RECV_BUFFER_SIZE);
 
@@ -193,20 +227,27 @@ UINT_PTR CPSock::ConnectServer(char* HostAddr, int Port, int ip, int WSA)
 		}
 		else if (connect(tSock, (const struct sockaddr*)&InAddr, 16) >= 0)
 		{
-			if (WSAAsyncSelect(tSock, hWndMain, WSA, 33) <= 0)
+			// Os pacotes do jogo sao pequenos e frequentes: sem isto o sistema
+			// segura cada um por ate 200 ms esperando juntar mais dados (Nagle).
+			BOOL bNoDelay = TRUE;
+			setsockopt(tSock, IPPROTO_TCP, TCP_NODELAY, (const char*)&bNoDelay, sizeof(bNoDelay));
+
+			// A troca de chaves e feita com o socket ainda bloqueante, antes do
+			// WSAAsyncSelect: daqui em diante so trafegam quadros cifrados.
+			unsigned int InitCode = INIT_CODE;
+			if (send(tSock, (const char*)&InitCode, 4, 0) != 4 || !SecureHandshake(tSock))
 			{
-				Sock = tSock;
-				unsigned int InitCode = INIT_CODE;
-				send(tSock, (const char*)&InitCode, 4, 0);
-				Init = 1;
-				return tSock;
-			}
-			else
-			{
+				Secure.Reset();
 				closesocket(tSock);
 				Sock = 0;
 				return 0;
 			}
+
+			WSAAsyncSelect(tSock, hWndMain, WSA, 33);
+			Sock = tSock;
+			nNotifyMsg = WSA;
+			Init = 1;
+			return tSock;
 		}
 		else
 		{
@@ -224,6 +265,46 @@ UINT_PTR CPSock::ConnectServer(char* HostAddr, int Port, int ip, int WSA)
 	}
 
 	return 1;
+}
+
+bool CPSock::SecureHandshake(UINT_PTR tSock)
+{
+	uint8_t serverKey[SECURE_KEY_SIZE];
+	if (!LoadServerKey(serverKey))
+	{
+		LOG_WRITELOG("%s ausente ou invalido: sem a chave do servidor nao ha conexao\r\n", ServerKey_Path);
+		return false;
+	}
+
+	uint8_t random[SECURE_KEY_SIZE];
+	if (BCryptGenRandom(nullptr, random, sizeof(random), BCRYPT_USE_SYSTEM_PREFERRED_RNG) != 0)
+		return false;
+
+	uint8_t hello[SECURE_HELLO_SIZE];
+	Secure.Begin(random, hello);
+	SecureZeroMemory(random, sizeof(random));
+	if (send(tSock, (const char*)hello, sizeof(hello), 0) != sizeof(hello))
+		return false;
+
+	// Um servidor que nao responde nao pode travar a janela para sempre.
+	DWORD dwTimeout = SECURE_HANDSHAKE_TIMEOUT_MS;
+	setsockopt(tSock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&dwTimeout, sizeof(dwTimeout));
+	uint8_t reply[SECURE_REPLY_SIZE];
+	bool received = RecvAll(tSock, reply, sizeof(reply));
+	dwTimeout = 0;
+	setsockopt(tSock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&dwTimeout, sizeof(dwTimeout));
+	if (!received)
+	{
+		LOG_WRITELOG("O servidor nao respondeu a troca de chaves (servidor antigo?)\r\n");
+		return false;
+	}
+
+	if (!Secure.Finish(serverKey, reply))
+	{
+		LOG_WRITELOG("O servidor nao tem a chave de %s: conexao recusada\r\n", ServerKey_Path);
+		return false;
+	}
+	return true;
 }
 
 UINT_PTR CPSock::SingleConnect(char* HostAddr, int Port, int ip, int WSA)
@@ -344,96 +425,44 @@ char* CPSock::ReadMessage(int* ErrorCode, int* ErrorType)
 	if ((unsigned int)(nRecvPosition - nProcPosition) < sizeof(MSG_STANDARD))
 		return 0;
 
-	unsigned short Size = *(unsigned short*)&pRecvBuffer[nProcPosition];
-	unsigned char iKeyWord = pRecvBuffer[nProcPosition + 2];
-	unsigned char KeyWord = pKeyWord[iKeyWord * 2];
-	unsigned char CheckSum = pRecvBuffer[nProcPosition + 3];
-	unsigned int SockType = *(unsigned short*)&pRecvBuffer[nProcPosition + 4];
-	unsigned int SockID = *(unsigned short*)&pRecvBuffer[nProcPosition + 6];
+	// Um quadro: uint16 com o tamanho, o pacote cifrado e a tag (SecureChannel.h).
+	unsigned short FrameSize = *(unsigned short*)&pRecvBuffer[nProcPosition];
 
-	if (RecvQueue[0] != 0)
-	{
-		char qKeyword;
-		if (RecvCount <= 15)
-		{
-			qKeyword = RecvQueue[RecvCount++];
-		}
-		else if (EncodeByte != 0)
-		{
-			char tb = EncodeByte[0];
-			if (!tb)
-				tb = EncodeByte[3];
-			if (!tb)
-				tb = 13;
-			char Keyword = EncodeByte[2] + EncodeByte[3] - (EncodeByte[1] * tb);
-			if (EncodeByte[2] + EncodeByte[3] == tb * EncodeByte[1])
-				Keyword = EncodeByte[0];
-			qKeyword = Keyword;
-		}
-		else
-		{
-			qKeyword = RecvQueue[15] % 2 ? RecvQueue[11] + RecvQueue[13] - this->RecvQueue[9] + 4 
-				: RecvQueue[3] + RecvQueue[1] + RecvQueue[5] - 87;
-		}
-
-		if (~qKeyword != iKeyWord)
-		{
-			*ErrorCode = 3;
-			*ErrorType = Size;
-			return 0;
-		}
-	}
-
-	if (Size >= RECV_BUFFER_SIZE || Size < sizeof(MSG_STANDARD))
+	if (FrameSize < sizeof(MSG_STANDARD) + SECURE_TAG_SIZE)
 	{
 		nRecvPosition = 0;
 		nProcPosition = 0;
 		*ErrorCode = 2;
-		*ErrorType = Size;
+		*ErrorType = FrameSize;
+		PostMessageA(hWndMain, nNotifyMsg, Sock, FD_CLOSE);
 		return 0;
 	}
 
-	if (Size > nRecvPosition - nProcPosition)
+	if (FrameSize > nRecvPosition - nProcPosition)
 	{
 		return 0;
 	}
 
 	char* pMsg = &pRecvBuffer[nProcPosition];
-	nProcPosition += Size;
+	nProcPosition += FrameSize;
 	if (nRecvPosition <= nProcPosition)
 	{
 		nRecvPosition = 0;
 		nProcPosition = 0;
 	}
 
-	unsigned char Sum1 = 0;
-	unsigned char Sum2 = 0;
-	int pos = KeyWord;
-	for (int i = sizeof(int); i < Size; i++, pos++)
+	// Abre no lugar: pMsg passa a ser o pacote em claro, com o Size dele.
+	// Um quadro que nao confere (alterado, repetido ou de outra conexao)
+	// encerra a conexao: depois dele os contadores nao batem mais.
+	if (Secure.Open((uint8_t*)pMsg, FrameSize) < 0)
 	{
-		Sum2 += pMsg[i];
-
-		int rst = pos % 256;
-		unsigned char Trans = pKeyWord[rst * 2 + 1];
-
-		int mod = i & 0x3;
-
-		if (mod == 0) 
-			pMsg[i] = pMsg[i] - (Trans << 1);
-		if (mod == 1) 
-			pMsg[i] = pMsg[i] + (Trans >> 3);
-		if (mod == 2) 
-			pMsg[i] = pMsg[i] - (Trans << 2);
-		if (mod == 3) 
-			pMsg[i] = pMsg[i] + (Trans >> 5);
-
-		Sum1 += pMsg[i];
-	}
-
-	if ((unsigned char)(Sum2 - Sum1) != CheckSum)
-	{
+		nRecvPosition = 0;
+		nProcPosition = 0;
 		*ErrorCode = 1;
-		*ErrorType = Size;
+		*ErrorType = FrameSize;
+		LOG_WRITELOG("Quadro invalido recebido do servidor: conexao encerrada\r\n");
+		PostMessageA(hWndMain, nNotifyMsg, Sock, FD_CLOSE);
+		return 0;
 	}
 
 	return pMsg;
@@ -446,6 +475,7 @@ int CPSock::CloseSocket()
 	nRecvPosition = 0;
 	nProcPosition = 0;
 	Init = 0;
+	Secure.Reset();
 	if (Sock)
 	{
 		// Cancela as notificacoes deste socket e descarta as que ja estao na
@@ -466,42 +496,7 @@ int CPSock::CloseSocket()
 
 int CPSock::AddMessage(char* pMsg, int Size)
 {
-	int Keyword = 0;
-	if (SendQueue[0])
-	{
-		if (SendCount > 15)
-		{
-			if (EncodeByte)
-			{
-				// we don't need this now... maaybe we can decompile later...
-			}
-			else
-			{
-				if (SendQueue[15] % 2)
-					Keyword = SendQueue[11] + SendQueue[13] - SendQueue[9] + 4;
-				else
-					Keyword = SendQueue[3] + SendQueue[1] + SendQueue[5] - 87;
-
-				Keyword ^= 0xFF;
-			}
-		}
-		else if(SendQueue[0])
-		{
-			if (SendCount > 15)
-			{
-				if (SendQueue[15] % 2)
-					Keyword = SendQueue[11] + SendQueue[13] - SendQueue[9] + 4;
-				else
-					Keyword = SendQueue[3] + SendQueue[1] + SendQueue[5] - 87;
-
-				Keyword ^= 0xFF;
-			}
-			else
-				Keyword = SendQueue[SendCount++] ^ 0xFF;
-		}
-	}
-
-	return AddMessage(pMsg, Size, Keyword);
+	return AddMessage(pMsg, Size, 0);
 }
 
 int CPSock::MeasurePing(const char* HostAddr, int Port, int ip) {
@@ -537,63 +532,29 @@ int CPSock::MeasurePing(const char* HostAddr, int Port, int ip) {
 	// Retornando o tempo de ping em milissegundos
 	return static_cast<int>(ping_ms);
 }
+// FixedKeyWord era o indice da cifra antiga; o transporte seguro nao o usa.
 int CPSock::AddMessage(char* pMsg, int Size, int FixedKeyWord)
 {
-	if (!Sock)
+	if (!Sock || !Secure.Ready())
 	{
 		ErrCount = 10;
 
 		return 0;
 	}
 
-	if (Size + nSendPosition < SEND_BUFFER_SIZE)
+	if (Size >= (int)sizeof(MSG_STANDARD) && Size + SECURE_TAG_SIZE + nSendPosition < SEND_BUFFER_SIZE)
 	{
-		unsigned char iKeyWord = FixedKeyWord;
-		if (!FixedKeyWord)
-			iKeyWord = rand() % 256;
-
-		unsigned char KeyWord = pKeyWord[iKeyWord * 2];
-		
 		auto packet = reinterpret_cast<MSG_STANDARD*>(pMsg);
 		packet->Size = Size;
-		packet->KeyWord = iKeyWord;
+		packet->KeyWord = 0;
 		packet->CheckSum = 0;
 
 		packet->Tick = CurrentTime;
 		LastSendTime = CurrentTime;
 
-		unsigned char Sum1 = 0;
-		unsigned char Sum2 = 0;
-
-		int pos = KeyWord;
-		int i = 4;
-
-		while (i < Size)
-		{
-			Sum1 += pMsg[i];
-
-			int rst = pos % 256;
-			unsigned char Trans = pKeyWord[rst * 2 + 1];
-			int mod = i & 3;
-
-			if (!mod)
-				pSendBuffer[i + nSendPosition] = pMsg[i] + 2 * Trans;
-			else if (mod == 1)
-				pSendBuffer[i + nSendPosition] = pMsg[i] - ((int)Trans >> 3);
-			else if (mod == 2)
-				pSendBuffer[i + nSendPosition] = pMsg[i] + 4 * Trans;
-			else if (mod == 3)
-				pSendBuffer[i + nSendPosition] = pMsg[i] - ((int)Trans >> 5);
-
-			Sum2 += pSendBuffer[i++ + nSendPosition];
-			++pos;
-		}
-
-		unsigned char checkSum = Sum2 - Sum1;
-		packet->CheckSum = checkSum;
-		memcpy(&pSendBuffer[nSendPosition], pMsg, 4u);
-
-		nSendPosition += Size;
+		// O quadro vai direto para o buffer de envio, na ordem do contador.
+		Secure.Seal((const uint8_t*)pMsg, Size, (uint8_t*)&pSendBuffer[nSendPosition]);
+		nSendPosition += Size + SECURE_TAG_SIZE;
 
 		SendMessageA();
 		return 1;
@@ -712,26 +673,26 @@ char* CPSock::ReadMessage2(int* ErrorCode, int* ErrorType)
 
 void CPSock::RefreshRecvBuffer()
 {
+	if (nProcPosition <= 0)
+		return;
+
 	int left = nRecvPosition - nProcPosition;
+	if (left > 0)
+		memmove(pRecvBuffer, &pRecvBuffer[nProcPosition], left);
 
-	if (left > 0 && left <= RECV_BUFFER_SIZE)
-	{
-		memcpy(pRecvBuffer, &pRecvBuffer[nProcPosition], left);
-
-		nProcPosition = 0;
-		nRecvPosition -= left;
-	}
+	nProcPosition = 0;
+	nRecvPosition = left > 0 ? left : 0;
 }
 
+// Envio parcial: traz o que falta para o inicio. O original copiava do buffer
+// de recepcao e errava a conta; com quadros autenticados, um byte fora do
+// lugar derruba a conexao.
 void CPSock::RefreshSendBuffer()
 {
 	int left = nSendPosition - nSentPosition;
+	if (left > 0)
+		memmove(pSendBuffer, &pSendBuffer[nSentPosition], left);
 
-	if (left > 0 && left <= RECV_BUFFER_SIZE)
-	{
-		memcpy(pSendBuffer, &pRecvBuffer[nSentPosition], left);
-
-		nSentPosition = 0;
-		nSendPosition -= left;
-	}
+	nSentPosition = 0;
+	nSendPosition = left > 0 ? left : 0;
 }

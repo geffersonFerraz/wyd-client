@@ -17,6 +17,9 @@ constexpr const char* LogFile_Path = "clientlogs.log";
 
 constexpr const char* ServerName_Path = "sn.bin";
 constexpr const char* ServerList_Path = "serverlist.bin";
+// Chave publica do servidor (64 digitos hexadecimais), gerada no servidor
+// com "admin transport-key". Sem ela o cliente nao conecta: ver SecureChannel.h.
+constexpr const char* ServerKey_Path = "serverkey.txt";
 constexpr const char* ConfigFile_Path = "Config.bin";
 constexpr const char* VideoClipFile_Path = "WYD.avi";
 constexpr const char* ItemHelp_Path = "itemhelp.dat";

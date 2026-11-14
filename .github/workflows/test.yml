@@ -1,0 +1,40 @@
+# Testes do launcher e build do cliente (mingw-w64). Roda em push, pull
+# request e antes de cada release.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  launcher:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: Projects/WYDLauncher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: Projects/WYDLauncher/go.mod
+          cache-dependency-path: Projects/WYDLauncher/go.mod
+      - run: go test .
+      - run: GOOS=windows go vet .
+
+  client-mingw:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependências
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake make mingw-w64
+      - name: Build WYD.exe
+        run: |
+          cmake -S . -B build-linux
+          cmake --build build-linux --target WYD --parallel "$(nproc)"
