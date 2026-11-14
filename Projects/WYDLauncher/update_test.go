@@ -141,6 +141,8 @@ func TestRunIsNotReadyWithoutServerList(t *testing.T) {
 type manifestServer struct {
 	*httptest.Server
 	list, items []byte
+	names       []byte // sn.bin; nil = painel antigo, sem ele
+	brokenNames bool   // lista o sn.bin no manifesto, mas falha o download
 	manifest    string // "" = calculado dos arquivos
 	downloads   map[string]int
 }
@@ -153,8 +155,12 @@ func serveManifest(t *testing.T, items []byte) *manifestServer {
 		case manifestPath:
 			body := m.manifest
 			if body == "" {
-				body = fmt.Sprintf(`{"version":1,"files":[{"name":"serverlist.bin","path":"/serverlist.bin","size":%d,"sha256":%q},{"name":"ItemList.bin","path":"/itemlist.bin","size":%d,"sha256":%q}]}`,
-					len(m.list), hashOf(m.list), len(m.items), hashOf(m.items))
+				names := ""
+				if m.names != nil {
+					names = fmt.Sprintf(`,{"name":"sn.bin","path":"/sn.bin","size":%d,"sha256":%q}`, len(m.names), hashOf(m.names))
+				}
+				body = fmt.Sprintf(`{"version":1,"files":[{"name":"serverlist.bin","path":"/serverlist.bin","size":%d,"sha256":%q},{"name":"ItemList.bin","path":"/itemlist.bin","size":%d,"sha256":%q}%s]}`,
+					len(m.list), hashOf(m.list), len(m.items), hashOf(m.items), names)
 			}
 			w.Write([]byte(body))
 		case "/serverlist.bin":
@@ -163,6 +169,13 @@ func serveManifest(t *testing.T, items []byte) *manifestServer {
 		case "/itemlist.bin":
 			m.downloads[r.URL.Path]++
 			w.Write(m.items)
+		case "/sn.bin":
+			m.downloads[r.URL.Path]++
+			if m.names == nil || m.brokenNames {
+				http.NotFound(w, r)
+				return
+			}
+			w.Write(m.names)
 		default:
 			http.NotFound(w, r)
 		}
@@ -300,5 +313,34 @@ func TestStateFileIsValidJSON(t *testing.T) {
 	}
 	if got := state[itemListFile]; got.Remote != hashOf(srv.items) || got.Local != got.Remote || got.Address != "" {
 		t.Fatalf("%+v", state)
+	}
+}
+
+func TestRunDownloadsServerNamesOnlyWhenListed(t *testing.T) {
+	dir := t.TempDir()
+	srv := serveManifest(t, bytes.Repeat([]byte{7}, itemListSize))
+	writeFile(t, filepath.Join(dir, serverListFile), srv.list)
+	writeFile(t, filepath.Join(dir, itemListFile), srv.items)
+	writeFile(t, filepath.Join(dir, serverNamesFile), []byte("1 Canal\n"))
+
+	// Painel antigo: o sn.bin da release fica.
+	if p := runUpdate(dir); !p.Ready || srv.downloads["/sn.bin"] != 0 {
+		t.Fatalf("%+v %v", p, srv.downloads)
+	}
+
+	srv.names = bytes.Repeat([]byte{' '}, serverNamesSize)
+	copy(srv.names, "1 Atlas")
+	if p := runUpdate(dir); !p.Ready {
+		t.Fatalf("%+v", p)
+	}
+	if got, _ := os.ReadFile(filepath.Join(dir, serverNamesFile)); !bytes.Equal(got, srv.names) {
+		t.Fatalf("sn.bin: %q", got)
+	}
+
+	// Falha no download do sn.bin não impede de jogar.
+	srv.names[2] = 'B'
+	srv.brokenNames = true
+	if p := runUpdate(dir); !p.Done || !p.Ready || p.Total != 1 {
+		t.Fatalf("%+v", p)
 	}
 }

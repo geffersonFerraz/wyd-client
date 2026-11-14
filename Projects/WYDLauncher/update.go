@@ -27,6 +27,8 @@ import (
 const (
 	serverListFile  = "serverlist.bin"
 	itemListFile    = "ItemList.bin"
+	serverNamesFile = "sn.bin"
+	serverNamesSize = 10 * 32              // MAX_SERVERGROUP linhas de 32 bytes (cluster.ServerNamesSize)
 	serverListGroup = 11 * 64              // MAX_SERVERNUMBER x 64
 	serverListSize  = 10 * serverListGroup // MAX_SERVERGROUP grupos
 	itemListSize    = 6500 * 156           // MAX_ITEMLIST x sizeof(STRUCT_ITEMLIST)
@@ -79,14 +81,19 @@ type updateFile struct {
 	check func([]byte) error
 	// pin ajusta o arquivo baixado ao endereço das Configurações (opcional).
 	pin func(data []byte, address string) []byte
+	// optional: só é baixado quando o manifesto o lista (painel antigo não o
+	// serve), e sem ele o jogo abre do mesmo jeito.
+	optional bool
 }
 
 var updateFiles = []updateFile{
 	{serverListFile, "/serverlist.bin", serverListSize, func(b []byte) error {
 		_, err := serverBase(b) // Sem endereço, a próxima abertura não acharia o servidor.
 		return err
-	}, rewriteServerList},
-	{itemListFile, "/itemlist.bin", itemListSize, func([]byte) error { return nil }, nil},
+	}, rewriteServerList, false},
+	{itemListFile, "/itemlist.bin", itemListSize, func([]byte) error { return nil }, nil, false},
+	// Nomes dos servidores na lista do jogo (name no tmsrv.yaml).
+	{serverNamesFile, "/sn.bin", serverNamesSize, func([]byte) error { return nil }, nil, true},
 }
 
 // Progress é o estado que a janela mostra.
@@ -282,6 +289,9 @@ func (u *updater) fetch(base, address string, f updateFile, want *manifestFile, 
 // localReady diz se os arquivos em disco bastam para abrir o jogo.
 func (u *updater) localReady() bool {
 	for _, f := range updateFiles {
+		if f.optional {
+			continue
+		}
 		data, err := os.ReadFile(localPath(u.dir, f.name))
 		if err != nil || len(data) != f.size || f.check(data) != nil {
 			return false
@@ -347,6 +357,8 @@ func (u *updater) run() {
 				u.report(Progress{File: 1, Total: float64(i+1) / float64(len(updateFiles)), Status: f.name + " já está atualizado."})
 				continue
 			}
+		} else if f.optional {
+			continue
 		}
 		status := "Baixando " + f.name + "..."
 		var last Progress
@@ -356,6 +368,9 @@ func (u *updater) run() {
 		})
 		if err == nil {
 			state[f.name], changed = saved, true
+		}
+		if err != nil && f.optional {
+			continue // A cópia local (ou o texto padrão do jogo) serve.
 		}
 		if err != nil {
 			last.Done, last.Ready = true, u.localReady()
