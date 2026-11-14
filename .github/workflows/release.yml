@@ -48,7 +48,7 @@ jobs:
             Copy-Item -LiteralPath "Build\x64\Release\$f" -Destination "dist\$name\"
           }
           Compress-Archive -Path "dist\$name\*" -DestinationPath "dist\$name.zip"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: client-windows
           path: dist/*.zip
@@ -80,7 +80,7 @@ jobs:
           WYD_RELEASE_DIR="$pkg" ./wyd-linux.sh bundle
           # .tar.xz preserva o bit de execução do WYD-Linux e do Wine.
           tar -C dist -cJf "dist/$name.tar.xz" "$name"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: client-linux
           path: dist/*.tar.xz
