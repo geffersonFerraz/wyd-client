@@ -60,6 +60,9 @@ target_compile_definitions(WYD PRIVATE
     D3D9b_SDK_VERSION=31
     _WINSOCK_DEPRECATED_NO_WARNINGS
     _CRT_SECURE_NO_WARNINGS
+    # O strsafe.h do mingw-w64 do Ubuntu 24.04 (via dshow.h) troca strcpy e
+    # sprintf por nomes inexistentes; no MSVC isso é só um aviso.
+    STRSAFE_NO_DEPRECATE
     WIN32
     NDEBUG
     _WINDOWS
