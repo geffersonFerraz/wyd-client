@@ -11,6 +11,7 @@
 
 #ifdef _MSC_VER
 #pragma comment(lib, "bcrypt.lib")
+#pragma comment(lib, "ws2_32.lib") // getaddrinfo
 #endif
 
 int ConnectPort = 0;

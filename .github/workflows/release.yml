@@ -147,5 +147,10 @@ jobs:
 
           Também no GHCR: \`oras pull ghcr.io/$owner/wyd-client:$version\`
           EOF
-          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
-            --title "$TAG" --notes-file notes.md --generate-notes $prerelease
+          # A release pode já existir (criada pela tela do GitHub): só anexa os arquivos.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG" --notes-file notes.md --generate-notes $prerelease
+          fi
