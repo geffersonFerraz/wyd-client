@@ -8748,8 +8748,11 @@ int TMFieldScene::FrameMove(unsigned int dwServerTime)
 		m_pMessageBox->SetVisible(0);
 	}
 
+	// RenderRectRot desenha com -fAngle, entao o angulo do personagem entra com
+	// o sinal trocado. Com "m_fAngle - 135 graus" a seta saia espelhada (sul
+	// virava leste); 135 graus de deslocamento alinham a seta com o personagem.
 	if (m_pMiniMapDir)
-		m_pMiniMapDir->GetGeomControl()->fAngle = m_pMyHuman->m_fAngle - 2.3561945f;
+		m_pMiniMapDir->GetGeomControl()->fAngle = 2.3561945f - m_pMyHuman->m_fAngle;
 
 	if (m_pMiniMapPanel)
 	{
@@ -9183,8 +9186,10 @@ int TMFieldScene::FrameMove(unsigned int dwServerTime)
 			m_pPositionText->SetText(szPos, 0);
 
 			char szServer[64]{};
-			int nServerGroupIndex = nServerGroupIndex = g_pObjectManager->m_nServerGroupIndex;
-			sprintf(szServer, "%s-%d", g_szServerNameList[nServerGroupIndex], g_pObjectManager->m_nServerIndex);
+			// m_nServerGroupIndex comeca em 1; a linha 0 do sn.bin e o grupo 1.
+			int nGroup = g_pObjectManager->m_nServerGroupIndex - 1;
+			const char* szName = nGroup >= 0 && nGroup < 11 ? g_szServerNameList[nGroup] : "";
+			sprintf(szServer, "%s-%d", szName, g_pObjectManager->m_nServerIndex);
 			if (m_pMiniMapServerText)
 				m_pMiniMapServerText->SetText(szServer, 0);
 		}
