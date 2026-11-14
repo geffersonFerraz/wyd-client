@@ -25,8 +25,10 @@ const (
 
 	// O launcher precisa do mshtml, que o resto do jogo deixa desligado.
 	browserOverrides = "mscoree="
-	geckoInstaller   = `wine\share\wine\gecko\wine-gecko-2.47.4-x86_64.msi`
-	geckoMarker      = ".wyd-gecko"
+	// O WYD.exe também: a janela de registro usa o mesmo controle de navegador.
+	gameOverrides  = "d3dx9_43=n,b;d3dcompiler_43=n,b;mscoree="
+	geckoInstaller = `wine\share\wine\gecko\wine-gecko-2.47.4-x86_64.msi`
+	geckoMarker    = ".wyd-gecko"
 )
 
 type launcher struct {
@@ -315,7 +317,9 @@ func (l *launcher) play(args []string) int {
 	if info, err := os.Stderr.Stat(); err == nil && info.Mode()&os.ModeCharDevice != 0 {
 		out = io.MultiWriter(log, os.Stderr)
 	}
-	if err := l.wine(out, append([]string{"WYD.exe"}, args...)...).Run(); err != nil && !isExitError(err) {
+	game := l.wine(out, append([]string{"WYD.exe"}, args...)...)
+	game.Env = append(game.Env, "WINEDLLOVERRIDES="+gameOverrides)
+	if err := game.Run(); err != nil && !isExitError(err) {
 		showError(fmt.Sprintf("não foi possível abrir o jogo: %v", err))
 		return 1
 	}
